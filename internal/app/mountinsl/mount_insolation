@@ -1,0 +1,17 @@
+package mountinsl
+
+import (
+	"context"
+
+	"controller.com/config"
+	"controller.com/internal"
+)
+
+var adoreNgPath = config.AdoreNgPath
+var dstPath = config.DstPath
+var cli = internal.InitClient()
+var ctx = context.Background()
+
+func MountInsolation(managerID string) {
+
+}
