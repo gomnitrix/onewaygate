@@ -1,4 +1,4 @@
-package pidinsl
+package pidisol
 
 import (
 	"context"
@@ -13,11 +13,11 @@ import (
 )
 
 var adoreNgPath = config.AdoreNgPath
-var dstPath = config.DstPath
+var dstPath = config.ExecFileDstPath
 var cli = internal.InitClient()
 var ctx = context.Background()
 
-func PidInsolation(managerID string) {
+func PidIsolation(managerID string) {
 	// TODO need to be refactored
 	prepareAdoreNg(managerID)
 	insmodCmd := []string{"insmod", config.KoPath}

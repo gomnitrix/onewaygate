@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"controller.com/internal/app/pidinsl"
+	"controller.com/internal/app/mntisol"
+
+	"controller.com/internal/app/pidisol"
 
 	"controller.com/cmd/hider"
 
@@ -33,10 +35,11 @@ func main() {
 			target = internal.CreateTarget()
 		}
 		if manager == "" {
-			manager = internal.CreatRunManager(target)
+			manager = internal.CreateRunManager(target)
 			fmt.Println("Create successfully, the manager ID is ", manager)
 		}
-		pidinsl.PidInsolation(manager)
+		pidisol.PidIsolation(manager)
+		mntisol.MountIsolation(manager, target)
 	case "hide":
 		hideProcCmd.Parse(os.Args[2:]) //TODO mayby not used
 		hider.Hide(os.Args[2:])

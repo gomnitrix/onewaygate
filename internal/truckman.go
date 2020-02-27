@@ -13,7 +13,7 @@ var cli = InitClient()
 var ctx = context.Background()
 var image = config.Image
 
-func creatNewContainer(containerName string, hostConfig *container.HostConfig) string {
+func createNewContainer(containerName string, hostConfig *container.HostConfig) string {
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Cmd:   []string{"/bin/bash"},
 		Image: image,
@@ -29,13 +29,13 @@ func creatNewContainer(containerName string, hostConfig *container.HostConfig) s
 }
 
 func CreateTarget() (targetID string) {
-	targetID = creatNewContainer("target", nil)[0:12] //TODO fix the name
+	targetID = createNewContainer("target", nil)[0:12] //TODO fix the name
 	runContainer(targetID)
 	return
 }
 
-func CreatRunManager(target string) string {
-	managerID := creatManager(target)
+func CreateRunManager(target string) string {
+	managerID := createManager(target)
 	runContainer(managerID)
 	return managerID[0:12]
 }
@@ -46,11 +46,22 @@ func runContainer(ID string) {
 	}
 }
 
-func creatManager(target string) (managerID string) {
+func createManager(target string) (managerID string) {
 	pidConfig := container.PidMode("container:" + target)
 	hostConfig := &container.HostConfig{
 		PidMode: pidConfig,
 	}
-	managerID = creatNewContainer("manager_for_"+target, hostConfig)
+	managerID = createNewContainer("manager_for_"+target, hostConfig)
 	return
+}
+
+/*
+	identity: could be the name or the brief Id of a container
+*/
+func GetContainerFullID(identity string) string {
+	containerConfig, err := cli.ContainerInspect(ctx, identity)
+	if err != nil {
+		panic(err)
+	}
+	return containerConfig.ID
 }
