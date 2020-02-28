@@ -16,3 +16,9 @@ const (
 	Image             = "ubuntu:14.04"
 	MaxPrePidsNum     = 5
 )
+
+const (
+	PidFilePath = "/var/run/owmirror.pid"
+	AppName     = "owmirror"
+	EnvName     = "owm_Daemon"
+)
