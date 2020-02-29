@@ -8,14 +8,15 @@ import (
 )
 
 var file *os.File
-var eLog *log.Logger
+var ELog *log.Logger
+var ChMap map[string]chan bool
 
 func init() {
 	file, err := os.OpenFile(logPath+"log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		panic("open log failed")
 	}
-	eLog = log.New(io.MultiWriter(file, os.Stderr), "Error: ", log.Ldate|log.Ltime|log.Lshortfile)
+	ELog = log.New(io.MultiWriter(file, os.Stderr), "Error: ", log.Ldate|log.Ltime|log.Lshortfile)
 	return
 }
 

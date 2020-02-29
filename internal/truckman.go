@@ -58,12 +58,16 @@ func createManager(target string) (managerID string) {
 /*
 	identity: could be the name or the brief Id of a container
 */
-func GetContainerFullID(identity string) string {
+func GetContainerFullID(identity string) (string, error) {
 	containerConfig, err := cli.ContainerInspect(ctx, identity)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	return containerConfig.ID
+	return containerConfig.ID, nil
+}
+
+func RmContainer(identity string) error {
+	return cli.ContainerRemove(ctx, identity, types.ContainerRemoveOptions{})
 }
 
 //func CheckContainerID(container string) bool {

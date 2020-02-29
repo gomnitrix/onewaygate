@@ -1,7 +1,9 @@
 package internal
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strings"
 
@@ -64,6 +66,14 @@ func IsDigitAll(targetString string) bool {
 	pattern := "^-?\\d+(\\.\\d+)?$"
 	result, _ := regexp.MatchString(pattern, targetString)
 	return result
+}
+
+func GetParamJson(req *http.Request) map[string]string {
+	decoder := json.NewDecoder(req.Body)
+	defer req.Body.Close()
+	var param map[string]string
+	decoder.Decode(param)
+	return param
 }
 
 //func GetLogPath() string {

@@ -1,17 +1,19 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 
+	"controller.com/config"
 	"controller.com/internal"
 	"controller.com/internal/app/mntisol"
 	"controller.com/internal/app/pidisol"
 )
 
 type HttpHanlder func(w http.ResponseWriter, req *http.Request)
+
+var log = config.ELog
 
 type server struct {
 	in     io.ReadCloser
@@ -47,9 +49,7 @@ func NewServer(addr string, in io.ReadCloser, out, err io.Writer) server {
 	return ns
 }
 func RunHandler(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	var param map[string]string
-	decoder.Decode(param)
+	param := internal.GetParamJson(r)
 	target := param["target"]
 	if target != "" {
 		// TODO check the target ID
@@ -66,4 +66,18 @@ func RunHandler(w http.ResponseWriter, r *http.Request) {
 	pidisol.PidIsolation(manager)
 	mntisol.MountIsolation(manager, target)
 	//TODO add User ns and Net ns isolation
+}
+
+func StopHandler(w http.ResponseWriter, r *http.Request) {
+	param := internal.GetParamJson(r)
+	manager := param["manager"]
+	pidisol.SendStopToChan(manager)
+	mntisol.UmountTarget(manager)
+
+	for _, cont := range param {
+		err := internal.RmContainer(cont)
+		if err != nil {
+			log.Println(err)
+		}
+	}
 }
