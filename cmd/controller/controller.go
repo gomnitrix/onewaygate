@@ -2,27 +2,28 @@ package main
 
 import (
 	"flag"
-	"log"
-	"net/http"
 	"os"
+
+	"controller.com/cmd/daemon"
 
 	"controller.com/api/client"
 
 	"controller.com/config"
 )
 
+var flDaemon = flag.Bool("d", false, "Enable daemon mode")
+
 func main() {
-	flDaemon := flag.Bool("d", false, "Enable daemon mode")
 	flag.Parse()
 
 	if *flDaemon {
-		runServerWithDaemon()
+		daemon.RunServerWithDaemon()
 		return
 	}
-	proto := config.RootPw
-	addr := config.MntDstPath
+	host := config.Host
+	addr := config.Addr
 	var ctrlCli *client.ControllerCli
-	ctrlCli = client.CreateNewClient(os.Stdin, os.Stdout, os.Stderr, proto, addr)
+	ctrlCli = client.CreateNewClient(os.Stdin, os.Stdout, os.Stderr, host, addr)
 	if err := ctrlCli.Cmd(flag.Args()...); err != nil {
 		panic(err) //TODO better handle method
 	}
@@ -53,7 +54,5 @@ func main() {
 //	hideProcCmd.Parse(os.Args[2:]) //TODO mayby not used
 //	hider.Hide(os.Args[2:])
 //}
-
-}
 
 ///C:/Users/omnitrix/GoLand/controller.com

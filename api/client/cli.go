@@ -58,7 +58,7 @@ func (ctrlCli *ControllerCli) getMethod(name string) (func(...string) error, boo
 	if len(name) == 0 {
 		return nil, false
 	}
-	methodName := "Ctrl" + strings.ToUpper(name[:1]) + strings.ToLower(name[1:])
+	methodName := "Cmd" + strings.ToUpper(name[:1]) + strings.ToLower(name[1:])
 	method := reflect.ValueOf(ctrlCli).MethodByName(methodName)
 	if !method.IsValid() {
 		return nil, false

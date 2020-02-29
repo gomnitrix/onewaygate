@@ -31,21 +31,21 @@ type listener struct {
 var (
 	TimeDeadLine = 10 * time.Second
 	srv          *server
-	appName      string
-	pidFile      string
+	appName      = config.AppName
+	pidFile      = config.PidFilePath
 	pidVal       int
 )
 
 func init() {
-	appName = config.AppName
-	pidFile = config.PidFilePath
 	if os.Getenv(config.EnvName) != "true" {
-		cmd := "start" //缺省为start
+		cmd := "daemon" //缺省为start
 		if l := len(os.Args); l > 1 {
 			cmd = os.Args[l-1]
 		}
 		switch cmd {
-		case "start":
+		case "daemon":
+			fallthrough
+		case "-d":
 			if isRunning() {
 				log.Printf("[%d] %s is running\n", pidVal, appName)
 			} else { //fork daemon进程

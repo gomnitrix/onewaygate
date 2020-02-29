@@ -1,11 +1,11 @@
 package client
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-
-	"controller.com/internal"
-	"controller.com/internal/app/mntisol"
-	"controller.com/internal/app/pidisol"
+	"io/ioutil"
+	"net/http"
 
 	"controller.com/config"
 )
@@ -37,19 +37,22 @@ func (ctrlCli *ControllerCli) CmdRun(args ...string) error {
 		ctrlCli.CmdRun("--help")
 		return nil
 	}
-	if target != "" {
-		// TODO check the target ID
-		fmt.Println("the target:", target)
-		fmt.Println("Trying to create new manager for the target...")
-	} else {
-		fmt.Println("no target, trying to create.")
-		target = internal.CreateTarget()
+	postBody, err := json.Marshal(map[string]string{"target": target})
+	if err != nil {
+		fmt.Fprintf(ctrlCli.err, err.Error())
+		return nil
 	}
-	manager := internal.CreateRunManager(target)
-	fmt.Fprintf(ctrlCli.out, "Create successfully, the manager ID is ", manager)
-
-	// init the isolation relationship between manager and target
-	pidisol.PidIsolation(manager)
-	mntisol.MountIsolation(manager, target)
-	//TODO add User ns and Net ns isolation
+	postAddr := config.Host + config.Addr + "/run"
+	resp, err := http.Post(postAddr, "application/json;charset=UTF-8", bytes.NewReader(postBody))
+	if err != nil {
+		fmt.Fprintf(ctrlCli.err, err.Error())
+		return nil
+	}
+	respBtyes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Fprintf(ctrlCli.err, err.Error())
+		return nil
+	}
+	fmt.Fprintf(ctrlCli.out, string(respBtyes))
+	return nil
 }

@@ -18,6 +18,8 @@ const (
 )
 
 const (
+	Addr        = ":8080"
+	Host        = "http://127.0.0.1"
 	PidFilePath = "/var/run/owmirror.pid"
 	AppName     = "owmirror"
 	EnvName     = "owm_Daemon"
