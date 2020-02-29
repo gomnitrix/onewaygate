@@ -33,27 +33,6 @@ func (s server) StartServe() {
 	}
 }
 
-func RunHandler(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	var param map[string]string
-	decoder.Decode(param)
-	target := param["target"]
-	if target != "" {
-		// TODO check the target ID
-		fmt.Println("the target:", target)
-		fmt.Println("Trying to create new manager for the target...")
-	} else {
-		fmt.Println("no target, trying to create.")
-		target = internal.CreateTarget()
-	}
-	manager := internal.CreateRunManager(target)
-	fmt.Println("Create successfully, the manager ID is ", manager)
-
-	// init the isolation relationship between manager and target
-	pidisol.PidIsolation(manager)
-	mntisol.MountIsolation(manager, target)
-	//TODO add User ns and Net ns isolation
-}
 func NewServer(addr string, in io.ReadCloser, out, err io.Writer) server {
 	ns := server{
 		addr:   addr,
@@ -66,4 +45,25 @@ func NewServer(addr string, in io.ReadCloser, out, err io.Writer) server {
 		"/run": RunHandler,
 	}
 	return ns
+}
+func RunHandler(w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var param map[string]string
+	decoder.Decode(param)
+	target := param["target"]
+	if target != "" {
+		// TODO check the target ID
+		fmt.Fprint(w, "the target:", target)
+		fmt.Fprint(w, "Trying to create new manager for the target...")
+	} else {
+		fmt.Fprint(w, "no target, trying to create.")
+		target = internal.CreateTarget()
+	}
+	manager := internal.CreateRunManager(target)
+	fmt.Fprint(w, "Create successfully, the manager ID is ", manager)
+
+	// init the isolation relationship between manager and target
+	pidisol.PidIsolation(manager)
+	mntisol.MountIsolation(manager, target)
+	//TODO add User ns and Net ns isolation
 }

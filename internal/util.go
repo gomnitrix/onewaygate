@@ -44,19 +44,20 @@ func FirstIndexOf(value string, array []string) int {
 	return -1
 }
 
-func RunCommandInManager(managerID string, cmd []string) {
+func RunCommandInManager(managerID string, cmd []string) error {
 	fmt.Println(strings.Join(cmd, " "))
 	execId, err := cli.ContainerExecCreate(ctx, managerID, types.ExecConfig{
 		Privileged: true,
 		Cmd:        cmd,
 	})
 	if err != nil {
-		panic(err)
+		return err
 	}
 	err = cli.ContainerExecStart(ctx, execId.ID, types.ExecStartCheck{})
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
 func IsDigitAll(targetString string) bool {
@@ -64,3 +65,11 @@ func IsDigitAll(targetString string) bool {
 	result, _ := regexp.MatchString(pattern, targetString)
 	return result
 }
+
+//func GetLogPath() string {
+//	dir,err := os.Getwd()
+//	if err!=nil{
+//		panic("get log path failed")
+//	}
+//	return
+//}

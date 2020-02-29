@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"controller.com/cmd/hider"
+
 	"controller.com/config"
 )
 
@@ -44,6 +46,7 @@ func (ctrlCli *ControllerCli) CmdRun(args ...string) error {
 	}
 	postAddr := config.Host + config.Addr + "/run"
 	resp, err := http.Post(postAddr, "application/json;charset=UTF-8", bytes.NewReader(postBody))
+	defer resp.Body.Close()
 	if err != nil {
 		fmt.Fprintf(ctrlCli.err, err.Error())
 		return nil
@@ -54,5 +57,10 @@ func (ctrlCli *ControllerCli) CmdRun(args ...string) error {
 		return nil
 	}
 	fmt.Fprintf(ctrlCli.out, string(respBtyes))
+	return nil
+}
+
+func (ctrlCli *ControllerCli) CmdHide(args ...string) error {
+	hider.Hide(args)
 	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"controller.com/config"
 	"controller.com/internal"
@@ -16,16 +17,60 @@ var adoreNgPath = config.AdoreNgPath
 var dstPath = config.ExecFileDstPath
 var cli = internal.InitClient()
 var ctx = context.Background()
+var chMap map[string](chan bool)
+
+type HiderBoss struct {
+	realPidsLast  [config.MaxPrePidsNum]string
+	managerContID string
+}
 
 func PidIsolation(managerID string) {
+	newBoss := getNewBoss(managerID)
+	newBoss.Isolation()
+}
+
+func getNewBoss(managerID string) *HiderBoss {
+	//TODO check id
+	return &HiderBoss{
+		realPidsLast:  [5]string{},
+		managerContID: managerID,
+	}
+}
+
+func (boss *HiderBoss) Isolation() {
+	managerID := boss.managerContID
+	prepareHideEnv(managerID)
+	timeout := make(chan bool)
+	for {
+		go func() {
+			time.Sleep(config.SleepTime)
+			timeout <- true
+		}()
+		select {
+		case <-chMap[managerID]:
+
+			return
+		case <-timeout:
+			realPids := getRealPidsInManager(managerID)
+			internal.RunCommandInManager(managerID, []string{config.HiderPath, "hide", strings.Join(realPids, " ")})
+		}
+	}
+}
+func (boss HiderBoss) removeAdoreNg() {
+	rmmodCmd := []string{config.AvaPath, "U"}
+	err := internal.RunCommandInManager(boss.managerContID, rmmodCmd)
+	if err != nil {
+
+	}
+}
+
+func prepareHideEnv(managerID string) {
 	// TODO need to be refactored
 	prepareAdoreNg(managerID)
 	insmodCmd := []string{"insmod", config.KoPath}
 	// TODO need to provide a method to remove the adore-ng from the manager
 	internal.RunCommandInManager(managerID, insmodCmd)
-	realPids := getRealPidsInManager(managerID)
 	prepareHiderInManager(managerID)
-	internal.RunCommandInManager(managerID, []string{config.HiderPath, "hide", strings.Join(realPids, " ")})
 }
 
 func getRealPidsInManager(managerID string) (pids []string) {

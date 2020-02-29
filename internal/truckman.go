@@ -65,3 +65,7 @@ func GetContainerFullID(identity string) string {
 	}
 	return containerConfig.ID
 }
+
+//func CheckContainerID(container string) bool {
+//	containers,err := cli.ContainerList(ctx,types.ContainerListOptions{})
+//}
