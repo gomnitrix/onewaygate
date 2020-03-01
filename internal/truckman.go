@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"errors"
 
 	"controller.com/config"
 
@@ -60,14 +61,42 @@ func createManager(target string) (managerID string) {
 */
 func GetContainerFullID(identity string) (string, error) {
 	containerConfig, err := cli.ContainerInspect(ctx, identity)
-	if err != nil {
-		return "", err
+	if err == nil && containerConfig.ID != "" {
+		return containerConfig.ID, nil
 	}
-	return containerConfig.ID, nil
+	id, err := GetIDByName(identity)
+	if id == "" {
+		return "", errors.New("no such container")
+	} else {
+		return id, err
+	}
 }
 
 func RmContainer(identity string) error {
-	return cli.ContainerRemove(ctx, identity, types.ContainerRemoveOptions{})
+	return cli.ContainerRemove(ctx, identity, types.ContainerRemoveOptions{
+		Force: true,
+	})
+}
+
+func ListContainer() ([]types.Container, error) {
+	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
+	return containers, err
+}
+
+func GetIDByName(name string) (string, error) {
+	containers, err := ListContainer()
+	if err != nil {
+		return "", err
+	}
+	for i := 0; i < len(containers); i++ {
+		curContainer := containers[i]
+		for _, n := range curContainer.Names {
+			if n == name {
+				return curContainer.ID, nil
+			}
+		}
+	}
+	return "", errors.New("no container has this name: " + name)
 }
 
 //func CheckContainerID(container string) bool {

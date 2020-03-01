@@ -50,6 +50,8 @@ func (boss *HiderBoss) Isolation() {
 		case <-chMap[managerID]:
 			boss.removeAdoreNg()
 			close(chMap[managerID])
+			<-timeout
+			close(timeout)
 			delete(chMap, managerID)
 			return
 		case <-timeout:

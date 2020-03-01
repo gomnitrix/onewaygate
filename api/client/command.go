@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	"controller.com/internal"
 
@@ -14,8 +15,6 @@ import (
 
 	"controller.com/config"
 )
-
-var log = config.ELog
 
 func (ctrlCli *ControllerCli) CmdHelp(args ...string) error {
 	if len(args) >= 1 {
@@ -52,36 +51,41 @@ func (ctrlCli *ControllerCli) CmdRun(args ...string) error { // TODO fix all the
 	return nil
 }
 
-func (ctrlCli *ControllerCli) CmdStop(args ...string) error {
-	stopContCmd := ctrlCli.subCmd("stop", "", "stop the container you appoint")
-	manager := *stopContCmd.String("m", "", "the manager container you want to destory, this is a necessary param if you not provide the target manager")
-	target := *stopContCmd.String("t", "", "the target container you want to destory, this is a alternative param. If you provide this param, this will destory the target and the manager")
+func (ctrlCli *ControllerCli) CmdRemove(args ...string) error {
+	var manager, target string
+	stopContCmd := ctrlCli.subCmd("remove", "", "stop the container you appoint")
+	stopContCmd.StringVar(&manager, "m", "", "the manager container you want to destory, this is a necessary param if you not provide the target manager")
+	stopContCmd.StringVar(&target, "t", "", "the target container you want to destory, this is a alternative param. If you provide this param, this will destory the target and the manager")
+	stopContCmd.Parse(args)
 	var managerID, targetID string
 	if target != "" {
-		targetID, err := internal.GetContainerFullID(target)
+		var err error
+		targetID, err = internal.GetContainerFullID(target)
 		if err != nil {
-			log.Println(err)
+			fmt.Fprint(ctrlCli.err, err.Error())
+			os.Exit(1)
 		}
 		if manager == "" {
 			managerID = config.ManagerPrefix + targetID[0:12]
 		}
 	} else if manager == "" {
-		ctrlCli.CmdStop("--help")
+		ctrlCli.CmdRemove("--help")
 		return errors.New("manager and target could not both be empty")
 	} else {
 		managerID = manager
 	}
 
 	managerID, err := internal.GetContainerFullID(managerID)
+	if err != nil {
+		fmt.Fprint(ctrlCli.err, err.Error())
+		os.Exit(1)
+	}
 	managerID = managerID[0:12]
 	targetID = targetID[0:12]
-	if err != nil {
-		log.Println(err)
-	}
 	jsonBody := map[string]string{"manager": managerID, "target": targetID}
 	res := ctrlCli.SendRequest(jsonBody, "/stop")
 	if !res {
-		fmt.Fprint(ctrlCli.err, "send /stop failed")
+		fmt.Fprint(ctrlCli.err, "send /stop failed\n")
 	}
 	return nil
 }
@@ -98,17 +102,17 @@ func (ctrlCli *ControllerCli) SendRequest(jsonBody map[string]string, url string
 		return false
 	}
 	postAddr := config.Host + config.Addr + url
-	resp, err := http.Post(postAddr, "application/json;charset=UTF-8", bytes.NewReader(postBody))
+	resp, err := http.Post(postAddr, "application/json;charset=utf-8", bytes.NewReader(postBody))
 	defer resp.Body.Close()
 	if err != nil {
-		fmt.Fprintf(ctrlCli.err, err.Error())
+		fmt.Fprintln(ctrlCli.err, err.Error())
 		return false
 	}
 	respBtyes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Fprintf(ctrlCli.err, err.Error())
+		fmt.Fprintln(ctrlCli.err, err.Error())
 		return false
 	}
-	fmt.Fprintf(ctrlCli.out, string(respBtyes))
+	fmt.Fprintln(ctrlCli.out, string(respBtyes))
 	return true
 }

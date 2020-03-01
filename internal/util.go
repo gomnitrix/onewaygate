@@ -2,10 +2,8 @@ package internal
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"regexp"
-	"strings"
 
 	"controller.com/config"
 	"github.com/docker/docker/api/types"
@@ -47,7 +45,6 @@ func FirstIndexOf(value string, array []string) int {
 }
 
 func RunCommandInManager(managerID string, cmd []string) error {
-	fmt.Println(strings.Join(cmd, " "))
 	execId, err := cli.ContainerExecCreate(ctx, managerID, types.ExecConfig{
 		Privileged: true,
 		Cmd:        cmd,
@@ -68,12 +65,11 @@ func IsDigitAll(targetString string) bool {
 	return result
 }
 
-func GetParamJson(req *http.Request) map[string]string {
-	decoder := json.NewDecoder(req.Body)
-	defer req.Body.Close()
+func GetParamJson(req *http.Request) (map[string]string, error) {
 	var param map[string]string
-	decoder.Decode(param)
-	return param
+	err := json.NewDecoder(req.Body).Decode(&param)
+	defer req.Body.Close()
+	return param, err
 }
 
 //func GetLogPath() string {

@@ -1,7 +1,6 @@
 package hider
 
 import (
-	"os"
 	"strings"
 
 	"controller.com/config"
@@ -11,13 +10,6 @@ import (
 )
 
 func Hide(hostPids []string) {
-	fp, err := os.OpenFile("./fp.txt", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
-	if err != nil {
-		panic(err)
-	}
-	fp.Write([]byte("be called"))
-	fp.Write([]byte(strings.Join(hostPids, " ") + "\n"))
-	fp.Close()
 	out, err := sh.Command("ps", "-aux").Command("awk", "{print $2}").Output()
 	if err != nil {
 		panic(err)

@@ -44,40 +44,54 @@ func NewServer(addr string, in io.ReadCloser, out, err io.Writer) server {
 		err:    err,
 	}
 	ns.router = map[string]HttpHanlder{
-		"/run": RunHandler,
+		"/run":  RunHandler,
+		"/stop": StopHandler,
 	}
 	return ns
 }
 func RunHandler(w http.ResponseWriter, r *http.Request) {
-	param := internal.GetParamJson(r)
+	param, err := internal.GetParamJson(r)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
 	target := param["target"]
 	if target != "" {
 		// TODO check the target ID
-		fmt.Fprint(w, "the target:", target)
-		fmt.Fprint(w, "Trying to create new manager for the target...")
+		fmt.Fprintf(w, "the target:%s\n", target)
+		fmt.Fprint(w, "Trying to create new manager for this target...\n")
 	} else {
-		fmt.Fprint(w, "no target, trying to create.")
+		fmt.Fprint(w, "no target, trying to create\n")
 		target = internal.CreateTarget()
 	}
 	manager := internal.CreateRunManager(target)
-	fmt.Fprint(w, "Create successfully, the manager ID is ", manager)
+	fmt.Fprintf(w, "Create successfully:\nthe manager ID is %s\nthe target ID is %s\n", manager, target)
 
 	// init the isolation relationship between manager and target
 	go pidisol.PidIsolation(manager)
-	//mntisol.MountIsolation(manager, target)
+	mntisol.MountIsolation(manager, target)
 	//TODO add User ns and Net ns isolation
 }
 
 func StopHandler(w http.ResponseWriter, r *http.Request) {
-	param := internal.GetParamJson(r)
+	param, err := internal.GetParamJson(r)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
 	manager := param["manager"]
 	pidisol.SendStopToChan(manager)
 	mntisol.UmountTarget(manager)
 
 	for _, cont := range param {
+		if cont == "" {
+			continue
+		}
 		err := internal.RmContainer(cont)
 		if err != nil {
 			log.Println(err)
+			fmt.Fprintf(w, "remove %s failed\n", cont)
 		}
+		fmt.Fprintf(w, "%s removed\n", cont)
 	}
 }
