@@ -26,6 +26,7 @@ func (ctrlCli *ControllerCli) CmdHelp(args ...string) error {
 			return nil
 		}
 	}
+	internal.PrintTitle()
 	help := fmt.Sprintf("Usage: Controller [OPTIONS] COMMAND [arg...]\n\nA container manager controller program which based on docker.\n\nCommands:\n", config.DEFAULTUNIXSOCKET)
 	for _, command := range [][]string{} {
 		help += fmt.Sprintf("    %-10.10s%s\n", command[0], command[1])

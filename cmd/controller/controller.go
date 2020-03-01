@@ -11,12 +11,13 @@ import (
 	"controller.com/config"
 )
 
-var flDaemon = flag.Bool("d", false, "Enable daemon mode")
-
 func main() {
+	var flDaemon, fullDaemon bool
+	flag.BoolVar(&flDaemon, "d", false, "Enable daemon mode")
+	flag.BoolVar(&fullDaemon, "daemon", false, "Enable daemon mode")
 	flag.Parse()
 
-	if *flDaemon {
+	if flDaemon || fullDaemon {
 		daemon.RunServerWithDaemon()
 		return
 	}

@@ -2,6 +2,7 @@ package internal
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"regexp"
 
@@ -10,6 +11,18 @@ import (
 
 	"github.com/docker/docker/client"
 )
+
+func PrintTitle() {
+	//for i:=0;i<len(config.Title);i++{
+	//	if string(config.Title[i])=="|"{
+	//		fmt.Printf("\n %c[1;48;32m%s%c[0m\n\n", 0x1B, config.Title[i], 0x1B)
+	//	}else {
+	//		fmt.Printf("\n %c[0;48;32m%s%c[0m\n\n", 0x1B, config.Title[i], 0x1B)
+	//	}
+	//}
+	fmt.Printf("\n %c[1;48;32m%s%c[0m\n\n", 0x1B, config.Title, 0x1B)
+	//其中0x1B是标记，[开始定义颜色，1代表高亮，48代表黑色背景，32代表绿色前景，0代表恢复默认颜色。
+}
 
 func InitClient() *client.Client {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithVersion(config.DockerVersion))

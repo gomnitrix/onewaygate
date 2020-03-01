@@ -38,16 +38,20 @@ var (
 
 func init() {
 	if os.Getenv(config.EnvName) != "true" {
-		cmd := "daemon" //缺省为start
+		cmd := ""
 		if l := len(os.Args); l > 1 {
 			cmd = os.Args[l-1]
+			if (cmd == "daemon" || cmd == "-d" || cmd == "stop" || cmd == "-h") && l > 2 {
+				fmt.Printf("Usage: %s, to use server: -d|daemon|stop|-h\n", appName)
+				os.Exit(0)
+			}
 		}
 		switch cmd {
 		case "daemon":
 			fallthrough
 		case "-d":
 			if isRunning() {
-				log.Printf("[%d] %s is running\n", pidVal, appName)
+				log.Printf("[%d] %s is already running\n", pidVal, appName)
 			} else { //fork daemon进程
 				if err := forkDaemon(); err != nil {
 					log.Fatal(err)
@@ -55,9 +59,8 @@ func init() {
 			}
 		case "stop": //停止
 			if !isRunning() {
-				log.Printf("%s not running\n", appName)
+				log.Printf("%s is not running\n", appName)
 			} else {
-
 				syscall.Kill(pidVal, syscall.SIGTERM) //kill
 			}
 		case "-h":
