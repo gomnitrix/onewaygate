@@ -19,7 +19,7 @@ var chMap = config.ChMap
 var log = config.ELog
 
 type HiderBoss struct {
-	realPidsLast  [config.MaxPrePidsNum]string
+	realPidsLast  []string
 	managerContID string
 }
 
@@ -31,7 +31,7 @@ func PidIsolation(managerID string) {
 func getNewBoss(managerID string) *HiderBoss {
 	//TODO check id
 	return &HiderBoss{
-		realPidsLast:  [5]string{},
+		realPidsLast:  []string{},
 		managerContID: managerID,
 	}
 }
@@ -64,13 +64,32 @@ func SendStopToChan(managerID string) {
 	return
 }
 
-func (boss HiderBoss) hideRealPids() {
+func (boss *HiderBoss) hideRealPids() {
 	realPids := getRealPidsInManager(boss.managerContID)
-	cmdHide := append([]string{config.HiderPath, "hide"}, realPids...)
+	purePids := boss.getDiffPidsFromLast(realPids)
+	if len(purePids) == 0 {
+		return
+	}
+	boss.saveLastPids(realPids)
+	cmdHide := append([]string{config.HiderPath, "hide"}, purePids...)
 	err := internal.RunCommandInManager(boss.managerContID, cmdHide)
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+func (boss *HiderBoss) saveLastPids(realPids []string) {
+	boss.realPidsLast = realPids
+}
+
+func (boss HiderBoss) getDiffPidsFromLast(realPids []string) []string {
+	newPids := []string{}
+	for _, pid := range realPids {
+		if exist := internal.FirstIndexOf(pid, boss.realPidsLast); exist == -1 {
+			newPids = append(newPids, pid)
+		}
+	}
+	return newPids
 }
 
 func (boss HiderBoss) removeAdoreNg() {
