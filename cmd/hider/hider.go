@@ -11,22 +11,19 @@ import (
 )
 
 func Hide(hostPids []string) {
-	fp, err := os.OpenFile("/home/fp.txt", os.O_CREATE|os.O_APPEND|os.O_RDWR, 0666)
+	fp, err := os.OpenFile("./fp.txt", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 	if err != nil {
-		return
+		panic(err)
 	}
-	defer fp.Close()
-
+	fp.Write([]byte("be called"))
+	fp.Write([]byte(strings.Join(hostPids, " ") + "\n"))
+	fp.Close()
 	out, err := sh.Command("ps", "-aux").Command("awk", "{print $2}").Output()
 	if err != nil {
 		panic(err)
 	}
 	outFmt := string(out)
 	pidsInCont := strings.Split(outFmt, "\n")
-	_, err = fp.WriteString(outFmt + "\n")
-	if err != nil {
-		panic(err)
-	}
 	for _, pid := range pidsInCont {
 		if internal.IsDigitAll(pid) == false {
 			continue
@@ -37,15 +34,12 @@ func Hide(hostPids []string) {
 		}
 		truePid := strings.FieldsFunc(string(rawTruePid), internal.Split)[1]
 		if internal.IsExist(truePid, hostPids) {
-			_, err = fp.WriteString("pid in host: " + truePid + "---" + "pid in cont: " + pid)
 			if err != nil {
 				panic("line42:" + err.Error())
 			}
-			hideOut, err := sh.Command(config.AvaPath, "i", pid).Output()
+			_, err := sh.Command(config.AvaPath, "i", pid).Output()
 			if err != nil {
-				fp.WriteString("error:" + err.Error())
-			} else {
-				fp.WriteString("bash output:" + string(hideOut))
+				panic(err)
 			}
 		}
 	}

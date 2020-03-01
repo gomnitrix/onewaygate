@@ -63,8 +63,8 @@ func RunHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Create successfully, the manager ID is ", manager)
 
 	// init the isolation relationship between manager and target
-	pidisol.PidIsolation(manager)
-	mntisol.MountIsolation(manager, target)
+	go pidisol.PidIsolation(manager)
+	//mntisol.MountIsolation(manager, target)
 	//TODO add User ns and Net ns isolation
 }
 

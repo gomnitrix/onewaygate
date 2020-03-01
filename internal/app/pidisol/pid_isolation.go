@@ -2,9 +2,7 @@ package pidisol
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"controller.com/config"
@@ -51,8 +49,12 @@ func (boss *HiderBoss) Isolation() {
 		select {
 		case <-chMap[managerID]:
 			boss.removeAdoreNg()
+			close(chMap[managerID])
+			delete(chMap, managerID)
 			return
 		case <-timeout:
+			boss.hideRealPids()
+			//TODO 判断是否有已经屏蔽过的
 		}
 	}
 }
@@ -64,7 +66,8 @@ func SendStopToChan(managerID string) {
 
 func (boss HiderBoss) hideRealPids() {
 	realPids := getRealPidsInManager(boss.managerContID)
-	err := internal.RunCommandInManager(boss.managerContID, []string{config.HiderPath, "hide", strings.Join(realPids, " ")})
+	cmdHide := append([]string{config.HiderPath, "hide"}, realPids...)
+	err := internal.RunCommandInManager(boss.managerContID, cmdHide)
 	if err != nil {
 		log.Println(err)
 	}
@@ -95,8 +98,6 @@ func getRealPidsInManager(managerID string) (pids []string) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("top done")
-	fmt.Println(body)
 	index := internal.FirstIndexOf("PID", body.Titles)
 	pids = make([]string, 0, config.MaxPrePidsNum)
 	for _, v := range body.Processes {

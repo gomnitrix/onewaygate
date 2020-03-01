@@ -17,6 +17,14 @@ var ctx = context.Background()
 var log = config.ELog
 
 func MountIsolation(managerID, targetID string) {
+	managerID, err1 := internal.GetContainerFullID(managerID)
+	targetID, err2 := internal.GetContainerFullID(targetID)
+	if err1 != nil {
+		log.Println(err1)
+	}
+	if err2 != nil {
+		log.Println(err2)
+	}
 	managerMntPath := getAufsLayerOfCont(managerID)
 	targetMntPath := getAufsLayerOfCont(targetID)
 	dstMntPath := managerMntPath + config.MntDstPath
@@ -24,6 +32,10 @@ func MountIsolation(managerID, targetID string) {
 }
 
 func UmountTarget(managerID string) {
+	managerID, err1 := internal.GetContainerFullID(managerID)
+	if err1 != nil {
+		log.Println(err1)
+	}
 	managerMntPath := getAufsLayerOfCont(managerID)
 	dstMntPath := managerMntPath + config.MntDstPath
 	err := sh.Command("sudo", "-S", "umount", dstMntPath).SetInput(config.RootPw).Run()

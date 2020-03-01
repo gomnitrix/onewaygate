@@ -51,7 +51,7 @@ func createManager(target string) (managerID string) {
 	hostConfig := &container.HostConfig{
 		PidMode: pidConfig,
 	}
-	managerID = createNewContainer("manager_for_"+target, hostConfig)
+	managerID = createNewContainer(config.ManagerPrefix+target, hostConfig)
 	return
 }
 

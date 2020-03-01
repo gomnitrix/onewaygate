@@ -63,7 +63,7 @@ func (ctrlCli *ControllerCli) CmdStop(args ...string) error {
 			log.Println(err)
 		}
 		if manager == "" {
-			managerID = "manager_for_" + targetID[0:12]
+			managerID = config.ManagerPrefix + targetID[0:12]
 		}
 	} else if manager == "" {
 		ctrlCli.CmdStop("--help")
@@ -73,6 +73,8 @@ func (ctrlCli *ControllerCli) CmdStop(args ...string) error {
 	}
 
 	managerID, err := internal.GetContainerFullID(managerID)
+	managerID = managerID[0:12]
+	targetID = targetID[0:12]
 	if err != nil {
 		log.Println(err)
 	}
@@ -108,5 +110,5 @@ func (ctrlCli *ControllerCli) SendRequest(jsonBody map[string]string, url string
 		return false
 	}
 	fmt.Fprintf(ctrlCli.out, string(respBtyes))
-	return false
+	return true
 }

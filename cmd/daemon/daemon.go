@@ -5,7 +5,7 @@ import (
 
 	"controller.com/api/server"
 	"controller.com/config"
-	_ "controller.com/internal/app/daemon"
+	//_ "controller.com/internal/app/daemon"
 )
 
 func RunServerWithDaemon() {

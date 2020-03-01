@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -9,19 +10,28 @@ import (
 
 var file *os.File
 var ELog *log.Logger
-var ChMap map[string]chan bool
+var ChMap = make(map[string]chan bool)
 
 func init() {
 	file, err := os.OpenFile(logPath+"log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
-		panic("open log failed")
+		fmt.Println("open log failed")
+		return
 	}
 	ELog = log.New(io.MultiWriter(file, os.Stderr), "Error: ", log.Ldate|log.Ltime|log.Lshortfile)
 	return
 }
 
-const logPath = "/C/Users/omnitrix/GoLand/src/controller.com/log"
+// 日志文件位置
+const logPath = "/C/Users/omnitrix/GoLand/src/controller.com/log/"
 
+// 容器基础信息
+const (
+	DockerVersion = "1.37"
+	Image         = "ubuntu:14.04"
+)
+
+// 容器单向隔离配置
 const (
 	DEFAULTUNIXSOCKET = ""
 	RootPw            = "19981017"
@@ -34,9 +44,8 @@ const (
 	AvaPath           = ExecFileDstPath + "ava"
 	HiderPath         = ExecFileDstPath + "controller"
 	KoPath            = ExecFileDstPath + "adore-ng.ko"
-	DockerVersion     = "1.37"
-	Image             = "ubuntu:14.04"
 	MaxPrePidsNum     = 5
+	ManagerPrefix     = "m"
 )
 
 const (
