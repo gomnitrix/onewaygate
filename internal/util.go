@@ -13,15 +13,30 @@ import (
 )
 
 func PrintTitle() {
-	//for i:=0;i<len(config.Title);i++{
-	//	if string(config.Title[i])=="|"{
-	//		fmt.Printf("\n %c[1;48;32m%s%c[0m\n\n", 0x1B, config.Title[i], 0x1B)
-	//	}else {
-	//		fmt.Printf("\n %c[0;48;32m%s%c[0m\n\n", 0x1B, config.Title[i], 0x1B)
-	//	}
-	//}
-	fmt.Printf("\n %c[1;48;32m%s%c[0m\n\n", 0x1B, config.Title, 0x1B)
-	//其中0x1B是标记，[开始定义颜色，1代表高亮，48代表黑色背景，32代表绿色前景，0代表恢复默认颜色。
+	fl := false
+	for _, ch := range config.Title {
+		char := string(ch)
+		color := 32
+		fmtHL := 0
+		highLight := (char == "|" || char == "/" || char == "\\")
+		bracket := (char == "(" || char == ")")
+		if highLight && fl {
+			fmtHL = 1
+			fl = !fl
+		} else if highLight {
+			color = 34
+			fl = !fl
+		} else if bracket {
+			color = 37
+		} else {
+			color = 34
+			if char == "\n" {
+				fl = false
+			}
+		}
+		fmt.Printf("%c[%d;48;%dm%s%c[0m", 0x1B, fmtHL, color, char, 0x1B)
+	}
+	fmt.Print("\n")
 }
 
 func InitClient() *client.Client {
