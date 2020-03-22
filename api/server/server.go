@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 
+	"controller.com/internal/app/netisol"
+
 	"controller.com/config"
 	"controller.com/internal"
 	"controller.com/internal/app/mntisol"
@@ -70,7 +72,8 @@ func RunHandler(w http.ResponseWriter, r *http.Request) {
 	// init the isolation relationship between manager and target
 	go pidisol.PidIsolation(manager)
 	mntisol.MountIsolation(manager, target)
-	//TODO add User ns and Net ns isolation
+	netisol.NetWorkIsolation(manager, target)
+	//TODO add User ns isolation
 }
 
 func StopHandler(w http.ResponseWriter, r *http.Request) {

@@ -60,6 +60,13 @@ const (
 	SleepTime = time.Duration(20) * time.Second
 )
 
+const (
+	Table     = "mangle"
+	PreChain  = "PREROUTING"
+	PostChain = "POSTROUTING"
+	Rule      = " -j TEE --gateway "
+)
+
 const Title = `
   ______   ____    __    ____ .___  ___.  __  
  /  __  \  \   \  /  \  /   / |   \/   | |  | 

@@ -8,7 +8,6 @@ import (
 
 	"controller.com/config"
 	"github.com/docker/docker/api/types"
-
 	"github.com/docker/docker/client"
 )
 
@@ -98,6 +97,14 @@ func GetParamJson(req *http.Request) (map[string]string, error) {
 	err := json.NewDecoder(req.Body).Decode(&param)
 	defer req.Body.Close()
 	return param, err
+}
+
+func BuildPreRule(tgtIP, mgrIP string) string {
+	return "-s " + tgtIP + config.Rule + mgrIP
+}
+
+func BUildPostRule(tgtIP, mgrIP string) string {
+	return "-d " + tgtIP + config.Rule + mgrIP
 }
 
 //func GetLogPath() string {

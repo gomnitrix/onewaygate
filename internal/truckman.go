@@ -99,6 +99,15 @@ func GetIDByName(name string) (string, error) {
 	return "", errors.New("no container has this name: " + name)
 }
 
+func GetNetInfo(containerID string) (string, error) {
+	infos, err := cli.ContainerInspect(ctx, containerID)
+	if err != nil {
+		return "", err
+	}
+	ipv4Addr := infos.NetworkSettings.IPAddress
+	return ipv4Addr, nil
+}
+
 //func CheckContainerID(container string) bool {
 //	containers,err := cli.ContainerList(ctx,types.ContainerListOptions{})
 //}
