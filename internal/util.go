@@ -99,12 +99,12 @@ func GetParamJson(req *http.Request) (map[string]string, error) {
 	return param, err
 }
 
-func BuildPreRule(tgtIP, mgrIP string) string {
-	return "-s " + tgtIP + config.Rule + mgrIP
+func BuildPreRule(tgtIP, mgrIP string) []string {
+	return []string{"-s", tgtIP, "-j", "TEE", "--gateway", mgrIP}
 }
 
-func BUildPostRule(tgtIP, mgrIP string) string {
-	return "-d " + tgtIP + config.Rule + mgrIP
+func BUildPostRule(tgtIP, mgrIP string) []string {
+	return []string{"-d", tgtIP, "-j", "TEE", "--gateway", mgrIP}
 }
 
 //func GetLogPath() string {

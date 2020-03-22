@@ -104,9 +104,8 @@ func (boss HiderBoss) removeAdoreNg() {
 
 func prepareHideEnv(managerID string) {
 	// TODO need to be refactored
-	prepareAdoreNg(managerID)
+	//prepareAdoreNg(managerID)
 	insmodCmd := []string{"insmod", config.KoPath}
-	// TODO need to provide a method to remove the adore-ng from the manager
 	err := internal.RunCommandInManager(managerID, insmodCmd)
 	if err != nil {
 		log.Println(err)
@@ -136,6 +135,7 @@ func prepareHiderInManager(managerID string) {
 	}
 }
 
+//将controller复制到目标路径，以隐藏进程
 func getHider() (reader *os.File) {
 	reader, err := os.Open(config.HiderTarPath)
 	if err != nil {

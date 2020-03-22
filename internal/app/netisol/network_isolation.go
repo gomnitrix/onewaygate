@@ -3,14 +3,17 @@ package netisol
 import (
 	"controller.com/config"
 	"controller.com/internal"
-
 	"github.com/iptables"
 )
 
 var log = config.ELog
-var IPTables = iptables.IPTables{}
 
 func NetWorkIsolation(managerID, targetID string) error {
+	newIptable, err := iptables.New()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 	mgrAddr, err := internal.GetNetInfo(managerID)
 	if err != nil {
 		log.Println(err.Error())
@@ -21,21 +24,22 @@ func NetWorkIsolation(managerID, targetID string) error {
 		log.Println(err.Error())
 		return err
 	}
-	err = IPTables.Append(config.Table, config.PreChain, internal.BuildPreRule(tgtAddr, mgrAddr))
+	err = newIptable.Append(config.Table, config.PreChain, internal.BuildPreRule(tgtAddr, mgrAddr)...)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	err = IPTables.Append(config.Table, config.PostChain, internal.BUildPostRule(tgtAddr, mgrAddr))
+	err = newIptable.Append(config.Table, config.PostChain, internal.BUildPostRule(tgtAddr, mgrAddr)...)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	return closeForward(mgrAddr)
+	//return closeForward(managerID)
+	return nil
 }
 
 func closeForward(mgrID string) error {
-	err := internal.RunCommandInManager(mgrID, []string{"sysctl", "net.ipv4.ip_forward", "=", "0"})
+	err := internal.RunCommandInManager(mgrID, []string{"echo", "net.ipv4.ip_forward=0", ">>", "/etc/sysctl.conf"})
 	if err != nil {
 		log.Println(err)
 		return err
@@ -45,6 +49,11 @@ func closeForward(mgrID string) error {
 
 func RmTeeRules(managerID, targetID string) error {
 	//TODO 重构
+	newIptable, err := iptables.New()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 	mgrAddr, err := internal.GetNetInfo(managerID)
 	if err != nil {
 		log.Println(err.Error())
@@ -55,12 +64,12 @@ func RmTeeRules(managerID, targetID string) error {
 		log.Println(err.Error())
 		return err
 	}
-	err = IPTables.Delete(config.Table, config.PreChain, internal.BuildPreRule(tgtAddr, mgrAddr))
+	err = newIptable.Delete(config.Table, config.PreChain, internal.BuildPreRule(tgtAddr, mgrAddr)...)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	err = IPTables.Delete(config.Table, config.PostChain, internal.BUildPostRule(tgtAddr, mgrAddr))
+	err = newIptable.Delete(config.Table, config.PostChain, internal.BUildPostRule(tgtAddr, mgrAddr)...)
 	if err != nil {
 		log.Println(err)
 		return err

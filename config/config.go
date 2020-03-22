@@ -29,6 +29,7 @@ const logPath = "/C/Users/omnitrix/GoLand/src/controller.com/log/"
 const (
 	DockerVersion = "1.37"
 	Image         = "ubuntu:14.04"
+	MgrImage      = "ubuntu:mgr"
 )
 
 // 容器单向隔离配置

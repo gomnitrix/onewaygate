@@ -12,9 +12,8 @@ import (
 
 var cli = InitClient()
 var ctx = context.Background()
-var image = config.Image
 
-func createNewContainer(containerName string, hostConfig *container.HostConfig) string {
+func createNewContainer(containerName, image string, hostConfig *container.HostConfig) string {
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Cmd:   []string{"/bin/bash"},
 		Image: image,
@@ -30,7 +29,7 @@ func createNewContainer(containerName string, hostConfig *container.HostConfig) 
 }
 
 func CreateTarget() (targetID string) {
-	targetID = createNewContainer("target", nil)[0:12] //TODO fix the name
+	targetID = createNewContainer("target", config.Image, nil)[0:12] //TODO fix the name
 	runContainer(targetID)
 	return
 }
@@ -51,8 +50,9 @@ func createManager(target string) (managerID string) {
 	pidConfig := container.PidMode("container:" + target)
 	hostConfig := &container.HostConfig{
 		PidMode: pidConfig,
+		Sysctls: map[string]string{"net.ipv4.ip_forward": "0"},
 	}
-	managerID = createNewContainer(config.ManagerPrefix+target, hostConfig)
+	managerID = createNewContainer(config.ManagerPrefix+target, config.MgrImage, hostConfig)
 	return
 }
 
