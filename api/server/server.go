@@ -83,8 +83,10 @@ func StopHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	manager := param["manager"]
+	target := param["target"]
 	pidisol.SendStopToChan(manager)
 	mntisol.UmountTarget(manager)
+	netisol.RmTeeRules(manager, target)
 
 	for _, cont := range param {
 		if cont == "" {

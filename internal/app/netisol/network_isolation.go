@@ -42,3 +42,28 @@ func closeForward(mgrID string) error {
 	}
 	return nil
 }
+
+func RmTeeRules(managerID, targetID string) error {
+	//TODO 重构
+	mgrAddr, err := internal.GetNetInfo(managerID)
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
+	tgtAddr, err := internal.GetNetInfo(targetID)
+	if err != nil {
+		log.Println(err.Error())
+		return err
+	}
+	err = IPTables.Delete(config.Table, config.PreChain, internal.BuildPreRule(tgtAddr, mgrAddr))
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	err = IPTables.Delete(config.Table, config.PostChain, internal.BUildPostRule(tgtAddr, mgrAddr))
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
