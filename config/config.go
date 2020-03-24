@@ -49,6 +49,7 @@ const (
 	ManagerPrefix     = "m"
 )
 
+//server config
 const (
 	Addr        = ":8080"
 	Host        = "http://127.0.0.1"
@@ -57,15 +58,28 @@ const (
 	EnvName     = "owm_Daemon"
 )
 
+//pid isolation interval
 const (
 	SleepTime = time.Duration(20) * time.Second
 )
 
+//iptables config (for network isolation)
 const (
 	Table     = "mangle"
 	PreChain  = "PREROUTING"
 	PostChain = "POSTROUTING"
-	Rule      = " -j TEE --gateway "
+)
+
+// database config
+const (
+	DbUserName      = "gbw"
+	DbPassWd        = "19981017"
+	DbNetWork       = "tcp"
+	DbServer        = "127.0.0.1"
+	DbPort          = 3306
+	DbName          = "GRADPROJ"
+	ConnMaxLifeTime = time.Duration(200) * time.Second
+	MaxOpenConns    = 20
 )
 
 const Title = `

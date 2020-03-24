@@ -56,7 +56,6 @@ func (boss *HiderBoss) Isolation() {
 			return
 		case <-timeout:
 			boss.hideRealPids()
-			//TODO 判断是否有已经屏蔽过的
 		}
 	}
 }
