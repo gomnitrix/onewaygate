@@ -24,7 +24,7 @@ type ContMap struct {
 }
 
 func GetNewHelper() *DbHelper {
-	return &DbHelper{
+	helper := &DbHelper{
 		DbName:     config.DbName,
 		DbUserName: config.DbUserName,
 		DbPassWd:   config.DbPassWd,
@@ -32,6 +32,9 @@ func GetNewHelper() *DbHelper {
 		DbServer:   config.DbServer,
 		DbPort:     config.DbPort,
 	}
+	helper.Open()
+	helper.createTable()
+	return helper
 }
 
 func (helper DbHelper) getConn() (conn string) {
@@ -56,7 +59,10 @@ func (helper *DbHelper) Open() {
 	db.SetConnMaxLifetime(config.ConnMaxLifeTime)
 	db.SetMaxOpenConns(config.MaxOpenConns)
 	helper.Db = db
-	helper.createTable()
+}
+
+func (helper *DbHelper) Close() {
+	helper.Db.Close()
 }
 
 func (helper *DbHelper) createTable() bool {
@@ -83,7 +89,7 @@ func (helper *DbHelper) GetChMap() map[string]chan bool {
 		return nil
 	}
 	for rows.Next() {
-		err = rows.Scan(manager) //不scan会导致连接不释放
+		err = rows.Scan(&manager)
 		if err != nil {
 			fmt.Printf("Scan failed,err:%v\n", err)
 			return nil

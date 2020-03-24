@@ -37,14 +37,16 @@ func (ctrlCli *ControllerCli) CmdHelp(args ...string) error {
 
 func (ctrlCli *ControllerCli) CmdRun(args ...string) error { // TODO fix all the Cmd method error
 	var cmdName string = "run"
+	var target, name string
 	runContCmd := ctrlCli.subCmd(cmdName, "", "init and assign a new manager container for a target container")
-	target := *runContCmd.String("-t", "", "provide an exist target container")
+	runContCmd.StringVar(&target, "t", "", "provide an exist target container")
+	runContCmd.StringVar(&name, "name", "", "the target container name you want to assign to a new container,this is an alternative param")
 	if err := runContCmd.Parse(args); err != nil {
 		fmt.Fprintf(ctrlCli.err, "Error: Args parse failed in "+cmdName)
 		ctrlCli.CmdRun("--help")
 		return nil
 	}
-	jsonBody := map[string]string{"target": target}
+	jsonBody := map[string]string{"target": target, "TgtName": name}
 	res := ctrlCli.SendRequest(jsonBody, "/run")
 	if !res {
 		fmt.Fprint(ctrlCli.err, "send /run failed")
@@ -59,6 +61,15 @@ func (ctrlCli *ControllerCli) CmdRemove(args ...string) error {
 	stopContCmd.StringVar(&target, "t", "", "the target container you want to destory, this is a alternative param. If you provide this param, this will destory the target and the manager")
 	stopContCmd.Parse(args)
 	var managerID, targetID string
+	if target == "" && manager == "" {
+		ctrlCli.CmdRemove("--help")
+		return errors.New("manager and target could not both be empty")
+	}
+	if manager == "" {
+		//TODO 数据库查询manager id
+	} else {
+		managerID = manager
+	}
 	if target != "" {
 		var err error
 		targetID, err = internal.GetContainerFullID(target)
@@ -66,16 +77,7 @@ func (ctrlCli *ControllerCli) CmdRemove(args ...string) error {
 			fmt.Fprint(ctrlCli.err, err.Error())
 			os.Exit(1)
 		}
-		if manager == "" {
-			managerID = config.ManagerPrefix + targetID[0:12]
-		}
-	} else if manager == "" {
-		ctrlCli.CmdRemove("--help")
-		return errors.New("manager and target could not both be empty")
-	} else {
-		managerID = manager
 	}
-
 	managerID, err := internal.GetContainerFullID(managerID)
 	if err != nil {
 		fmt.Fprint(ctrlCli.err, err.Error())

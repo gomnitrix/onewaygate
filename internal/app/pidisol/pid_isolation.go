@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"controller.com/internal/app/sqlhelper"
+
 	"controller.com/config"
 	"controller.com/internal"
 
@@ -15,12 +17,24 @@ var adoreNgPath = config.AdoreNgPath
 var dstPath = config.ExecFileDstPath
 var cli = internal.InitClient()
 var ctx = context.Background()
-var chMap = config.ChMap
+var chMap map[string]chan bool
 var log = config.ELog
 
 type HiderBoss struct {
 	realPidsLast  []string
 	managerContID string
+}
+
+func InitMap() {
+	if chMap != nil {
+		return
+	}
+	var myDb = sqlhelper.GetNewHelper()
+	defer myDb.Close()
+	chMap = myDb.GetChMap()
+	for mgr, _ := range chMap {
+		go PidIsolation(mgr)
+	}
 }
 
 func PidIsolation(managerID string) {
@@ -38,8 +52,10 @@ func getNewBoss(managerID string) *HiderBoss {
 
 func (boss *HiderBoss) Isolation() {
 	managerID := boss.managerContID
-	chMap[managerID] = make(chan bool)
-	prepareHideEnv(managerID)
+	if _, ok := chMap[managerID]; !ok {
+		chMap[managerID] = make(chan bool)
+		prepareHideEnv(managerID)
+	}
 	timeout := make(chan bool)
 	for {
 		go func() {

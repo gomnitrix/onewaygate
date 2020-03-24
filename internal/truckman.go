@@ -28,16 +28,10 @@ func createNewContainer(containerName, image string, hostConfig *container.HostC
 	return resp.ID
 }
 
-func CreateTarget() (targetID string) {
-	targetID = createNewContainer("target", config.Image, nil)[0:12] //TODO fix the name
+func CreateTarget(targetName string) (targetID string) {
+	targetID = createNewContainer(targetName, config.Image, nil)[0:12] //TODO fix the name
 	runContainer(targetID)
 	return
-}
-
-func CreateRunManager(target string) string {
-	managerID := createManager(target)
-	runContainer(managerID)
-	return managerID[0:12]
 }
 
 func runContainer(ID string) {
@@ -46,13 +40,19 @@ func runContainer(ID string) {
 	}
 }
 
+func CreateRunManager(target string) string {
+	managerID := createManager(target)
+	runContainer(managerID)
+	return managerID[0:12]
+}
+
 func createManager(target string) (managerID string) {
 	pidConfig := container.PidMode("container:" + target)
 	hostConfig := &container.HostConfig{
 		PidMode: pidConfig,
 		Sysctls: map[string]string{"net.ipv4.ip_forward": "0"},
 	}
-	managerID = createNewContainer(config.ManagerPrefix+target, config.MgrImage, hostConfig)
+	managerID = createNewContainer("", config.MgrImage, hostConfig)
 	return
 }
 
