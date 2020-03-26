@@ -33,7 +33,7 @@ func GetNewHelper() *DbHelper {
 		DbPort:     config.DbPort,
 	}
 	helper.Open()
-	helper.createTable()
+	//helper.createTable()
 	return helper
 }
 
