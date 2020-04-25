@@ -1,9 +1,7 @@
 package internal
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"regexp"
 
 	"controller.com/config"
@@ -92,12 +90,12 @@ func IsDigitAll(targetString string) bool {
 	return result
 }
 
-func GetParamJson(req *http.Request) (map[string]string, error) {
-	var param map[string]string
-	err := json.NewDecoder(req.Body).Decode(&param)
-	defer req.Body.Close()
-	return param, err
-}
+//func GetParamJson(ctx iris.Context) (map[string]string, error) {
+//	var param map[string]string
+//	err := json.NewDecoder(ctx.Body).Decode(&param)
+//	defer req.Body.Close()
+//	return param, err
+//}
 
 func BuildPreRule(tgtIP, mgrIP string) []string {
 	return []string{"-s", tgtIP, "-j", "TEE", "--gateway", mgrIP}

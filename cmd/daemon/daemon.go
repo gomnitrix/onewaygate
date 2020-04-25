@@ -1,14 +1,13 @@
 package daemon
 
 import (
-	"os"
-
 	"controller.com/api/server"
-	"controller.com/config"
-	_ "controller.com/internal/app/daemon"
+	//_ "controller.com/internal/app/daemon"
+
+	"github.com/kataras/iris"
 )
 
 func RunServerWithDaemon() {
-	server := server.NewServer(config.Addr, os.Stdin, os.Stdout, os.Stderr)
-	server.StartServe()
+	app := iris.New()
+	server.StartServe(app)
 }
