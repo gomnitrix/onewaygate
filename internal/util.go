@@ -1,8 +1,14 @@
 package internal
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"path/filepath"
 	"regexp"
+	"runtime"
+
+	"github.com/kataras/iris"
 
 	"controller.com/config"
 	"github.com/docker/docker/api/types"
@@ -90,6 +96,19 @@ func IsDigitAll(targetString string) bool {
 	return result
 }
 
+func GetProjRoot() string {
+	_, cur, _, ok := runtime.Caller(1)
+	if !ok {
+		panic(errors.New("Can not get current file info"))
+	}
+	root := filepath.Dir(filepath.Dir(cur))
+	return root
+}
+
+func JoinPath(relaPath string) string {
+	return filepath.Join(GetProjRoot(), relaPath)
+}
+
 //func GetParamJson(ctx iris.Context) (map[string]string, error) {
 //	var param map[string]string
 //	err := json.NewDecoder(ctx.Body).Decode(&param)
@@ -101,8 +120,23 @@ func BuildPreRule(tgtIP, mgrIP string) []string {
 	return []string{"-s", tgtIP, "-j", "TEE", "--gateway", mgrIP}
 }
 
-func BUildPostRule(tgtIP, mgrIP string) []string {
+func BuildPostRule(tgtIP, mgrIP string) []string {
 	return []string{"-d", tgtIP, "-j", "TEE", "--gateway", mgrIP}
+}
+
+func GetJsonSata(v interface{}) string {
+	tmp, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(tmp)
+}
+
+func Response(ctx iris.Context, html string) {
+	if err := ctx.View(html); err != nil {
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.WriteString(err.Error())
+	}
 }
 
 //func GetLogPath() string {

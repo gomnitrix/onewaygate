@@ -1,9 +1,10 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
+
+	"github.com/kataras/iris/sessions"
 
 	"controller.com/config"
 	"controller.com/internal"
@@ -11,14 +12,18 @@ import (
 	"controller.com/internal/app/netisol"
 	"controller.com/internal/app/pidisol"
 	"controller.com/internal/app/sqlhelper"
-
 	"github.com/kataras/iris"
 )
 
-type HttpHanlder func(w http.ResponseWriter, req *http.Request)
-
 var log = config.ELog
 var myDb *sqlhelper.DbHelper
+var certPath = internal.JoinPath(config.CertPath)
+var keyPath = internal.JoinPath(config.KeyPath)
+
+var (
+	cookieNameForSessionID = "owmsessionid"
+	sess                   = sessions.New(sessions.Config{Cookie: cookieNameForSessionID})
+)
 
 func initDb() {
 	if myDb != nil {
@@ -27,54 +32,23 @@ func initDb() {
 	myDb = sqlhelper.GetNewHelper()
 }
 
-type server struct {
-	in     io.ReadCloser
-	out    io.Writer
-	err    io.Writer
-	addr   string
-	router map[string]HttpHanlder
-}
-
-// old func
-func (s server) StartServe() {
-	mux := http.NewServeMux()
-	for route, handler := range s.router {
-		mux.HandleFunc(route, handler)
-	}
-	//TODO add log
-	pidisol.InitMap()
-	initDb()
-	if err := http.ListenAndServe(s.addr, mux); err != nil {
-		//TODO log
-		fmt.Fprintf(s.out, err.Error())
-	}
-}
-
 func StartServe(app *iris.Application) {
 	pidisol.InitMap()
 	initDb()
-	app.Post("/run", NewRunHandler)
-	app.Post("/stop", NewStopHandler)
-	if err := app.Run(iris.Addr(config.Addr)); err != nil {
+	if err := app.Run(iris.TLS(config.Addr, certPath, keyPath)); err != nil {
 		//TODO fix log
 		fmt.Println(err.Error())
 	}
 }
 
-//func NewServer(addr string, in io.ReadCloser, out, err io.Writer) server {
-//	ns := server{
-//		addr:   addr,
-//		router: nil,
-//		in:     in,
-//		out:    out,
-//		err:    err,
-//	}
-//	ns.router = map[string]HttpHanlder{
-//		"/run":  RunHandler,
-//		"/stop": StopHandler,
-//	}
-//	return ns
-//}
+func Error404(ctx iris.Context) {
+	ctx.Gzip(true)
+	ctx.ContentType("text/html")
+	if err := ctx.View("main.html"); err != nil {
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.WriteString(err.Error())
+	}
+}
 
 func NewRunHandler(ctx iris.Context) {
 	var payload map[string]string
@@ -135,8 +109,127 @@ func NewStopHandler(ctx iris.Context) {
 	myDb.DeleteConts(target)
 }
 
-//func WebRunHandler(ctx iris.Context) {
+//func LoginHandler(ctx iris.Context) {
+//	session := sess.Start(ctx)
 //
+//}
+
+func WebRunHandler(ctx iris.Context) {
+	ctx.Gzip(true)
+	ctx.ContentType("text/html")
+	ctx.ViewData("userName", "ifme")
+	//groups := map[string]string{"length": "3", "1": "group1", "2": "group2", "3": "group3"}
+	ctx.ViewData("index", [2]string{"0", "1"})
+	groups := [2](map[string]string){{"manager": "manager1", "1": "target1"}, {"manager": "manager2", "1": "target1", "2": "target2"}}
+	bytesGroups, _ := json.Marshal(groups)
+	jsonGroups := string(bytesGroups)
+	ctx.ViewData("groupList", jsonGroups)
+	if err := ctx.View("main.html"); err != nil {
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.WriteString(err.Error())
+	}
+}
+
+func WebTableViewHandler(ctx iris.Context) {
+	ctx.Gzip(true)
+	ctx.ContentType("text/html")
+	//forloop := [2]string{"0", "1"}
+	//index := [][]string{{"2", "3"}, {"2", "3", "4"}}
+	targetList := [2][]map[string]string{
+		{
+			{
+				"ID":     "target111",
+				"Name":   "target1",
+				"Status": "Normal",
+			},
+			{
+				"ID":     "target222",
+				"Name":   "target2",
+				"Status": "Normal",
+			},
+		},
+		{
+			{
+				"ID":     "target333",
+				"Name":   "target3",
+				"Status": "Normal",
+			},
+			{
+				"ID":     "target444",
+				"Name":   "target4",
+				"Status": "Normal",
+			},
+			{
+				"ID":     "target555",
+				"Name":   "target5",
+				"Status": "Normal",
+			},
+		},
+	}
+	managerList := [2](map[string]string){
+		{
+			"ID":     "AAAAA",
+			"Name":   "manager1",
+			"Status": "Normal",
+		},
+		{
+			"ID":     "BBBBB",
+			"Name":   "manager2",
+			"Status": "Normal",
+		},
+	}
+	ctx.ViewData("index", [2]int{0, 1})
+	ctx.ViewData("mgrList", internal.GetJsonSata(managerList))
+	ctx.ViewData("tgtList", internal.GetJsonSata(targetList))
+	if err := ctx.View("table.html"); err != nil {
+		ctx.StatusCode(iris.StatusInternalServerError)
+		ctx.WriteString(err.Error())
+	}
+}
+
+func WebLoginHandler(ctx iris.Context) {
+	ctx.Gzip(true)
+	ctx.ContentType("text/html")
+	internal.Response(ctx, "login.html")
+}
+
+//type HttpHanlder func(w http.ResponseWriter, req *http.Request)
+//// old func
+//func (s server) StartServe() {
+//	mux := http.NewServeMux()
+//	for route, handler := range s.router {
+//		mux.HandleFunc(route, handler)
+//	}
+//	//TODO add log
+//	pidisol.InitMap()
+//	initDb()
+//	if err := http.ListenAndServe(s.addr, mux); err != nil {
+//		//TODO log
+//		fmt.Fprintf(s.out, err.Error())
+//	}
+//}
+
+//type server struct {
+//	in     io.ReadCloser
+//	out    io.Writer
+//	err    io.Writer
+//	addr   string
+//	router map[string]HttpHanlder
+//}
+
+//func NewServer(addr string, in io.ReadCloser, out, err io.Writer) server {
+//	ns := server{
+//		addr:   addr,
+//		router: nil,
+//		in:     in,
+//		out:    out,
+//		err:    err,
+//	}
+//	ns.router = map[string]HttpHanlder{
+//		"/run":  RunHandler,
+//		"/stop": StopHandler,
+//	}
+//	return ns
 //}
 
 //func RunHandler(w http.ResponseWriter, r *http.Request) {

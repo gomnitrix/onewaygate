@@ -29,7 +29,7 @@ func NetWorkIsolation(managerID, targetID string) error {
 		log.Println(err)
 		return err
 	}
-	err = newIptable.Append(config.Table, config.PostChain, internal.BUildPostRule(tgtAddr, mgrAddr)...)
+	err = newIptable.Append(config.Table, config.PostChain, internal.BuildPostRule(tgtAddr, mgrAddr)...)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -69,7 +69,7 @@ func RmTeeRules(managerID, targetID string) error {
 		log.Println(err)
 		return err
 	}
-	err = newIptable.Delete(config.Table, config.PostChain, internal.BUildPostRule(tgtAddr, mgrAddr)...)
+	err = newIptable.Delete(config.Table, config.PostChain, internal.BuildPostRule(tgtAddr, mgrAddr)...)
 	if err != nil {
 		log.Println(err)
 		return err

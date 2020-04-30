@@ -21,8 +21,13 @@ func init() {
 	return
 }
 
-// 日志文件位置
+// 日志文件相对位置
 const logPath = "/C/Users/omnitrix/GoLand/src/controller.com/log/"
+const ServerPath = "api/server/"
+const TemplatePath = ServerPath + "template"
+const StaticPath = ServerPath + "static"
+const CertPath = ServerPath + "certificate/server.crt"
+const KeyPath = ServerPath + "certificate/server.key"
 
 // 容器基础信息
 const (
@@ -35,8 +40,8 @@ const (
 const (
 	DEFAULTUNIXSOCKET = ""
 	RootPw            = "19981017"
-	AdoreNgPath       = "/home/omnitrix/gradproj/adore-ng-master/adore-ng.tar"
-	HiderTarPath      = "/home/omnitrix/gradproj/controller/bin/controller.tar"
+	AdoreNgPath       = "/home/omnitrix/template/adore-ng-master/adore-ng.tar"
+	HiderTarPath      = "/home/omnitrix/template/controller/bin/controller.tar"
 	MountIDPath       = "/var/lib/docker/image/aufs/layerdb/mounts/"
 	ContLayerPath     = "/var/lib/docker/aufs/mnt/"
 	MntDstPath        = "/mnt"
