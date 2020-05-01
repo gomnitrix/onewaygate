@@ -2,6 +2,7 @@ package sqlhelper
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"controller.com/internal/OwmError"
@@ -156,12 +157,11 @@ func (helper *DbHelper) DeleteConts(targetID string) {
 
 func (helper *DbHelper) queryUser(name string) {
 	defer OwmError.Pack()
-	result, err := helper.Db.Exec("select * from userlist where uname = ?", name)
+	rows, err := helper.Db.Query("select * from userlist where uname = ?", name)
 	OwmError.Check(err, false, "Query user %s error\n", name)
-	rowsaffected, err := result.RowsAffected()
-	OwmError.Check(err, false, "Db RowsAffected Error\n")
-	if rowsaffected >= 1 {
-		OwmError.Check(err, false, "User: %s exist\n", name)
+	defer rows.Close()
+	if rows.Next() {
+		OwmError.Check(errors.New("UserExistError"), false, "User %s Already Exist\n", name)
 	}
 }
 
