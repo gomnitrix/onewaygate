@@ -4,6 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 
+	"controller.com/internal/OwmError"
+
+	"controller.com/Model"
+
 	"controller.com/config"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -33,7 +37,7 @@ func GetNewHelper() *DbHelper {
 		DbPort:     config.DbPort,
 	}
 	helper.Open()
-	//helper.createTable()
+	helper.CreateTable()
 	return helper
 }
 
@@ -65,17 +69,28 @@ func (helper *DbHelper) Close() {
 	helper.Db.Close()
 }
 
-func (helper *DbHelper) createTable() bool {
+func (helper *DbHelper) CreateTable() bool {
+	// create target<-->manager map table
 	sql := `CREATE TABLE IF NOT EXISTS contmap(
-	target VARCHAR(12) PRIMARY KEY NOT NULL,
-	manager VARCHAR(12) NOT NULL
+		target VARCHAR(12) PRIMARY KEY NOT NULL,
+		manager VARCHAR(12) NOT NULL
 	); `
 
 	if _, err := helper.Db.Exec(sql); err != nil {
-		fmt.Println("create table failed:", err)
+		fmt.Println("create contmap table failed:", err)
 		return false
 	}
-	fmt.Println("create table successd")
+
+	// create user Table
+	sql = `CREATE TABLE IF NOT EXISTS userlist(
+		uname VARCHAR(12) PRIMARY KEY NOT NULL,
+		passwd VARCHAR(12) NOT NULL
+	); `
+	if _, err := helper.Db.Exec(sql); err != nil {
+		fmt.Println("create userlist table failed:", err)
+		return false
+	}
+
 	return true
 }
 
@@ -136,5 +151,28 @@ func (helper *DbHelper) DeleteConts(targetID string) {
 	if rowsaffected != 1 {
 		fmt.Println("some stange things happened while deleting ")
 		return
+	}
+}
+
+func (helper *DbHelper) queryUser(name string) {
+	defer OwmError.Pack()
+	result, err := helper.Db.Exec("select * from userlist where uname = ?", name)
+	OwmError.Check(err, false, "Query user %s error\n", name)
+	rowsaffected, err := result.RowsAffected()
+	OwmError.Check(err, false, "Db RowsAffected Error\n")
+	if rowsaffected >= 1 {
+		OwmError.Check(err, false, "User: %s exist\n", name)
+	}
+}
+
+func (helper *DbHelper) InputUser(user Model.User) {
+	defer OwmError.Pack()
+	helper.queryUser(user.Name)
+	result, err := helper.Db.Exec("insert INTO userlist(uname,passwd) values(?,?)", user.Name, user.Passwd)
+	OwmError.Check(err, false, "Insert user: %s failed\n", user.Name)
+	rowsaffected, err := result.RowsAffected() //通过RowsAffected获取受影响的行数
+	OwmError.Check(err, false, "Db RowsAffected Error\n")
+	if rowsaffected != 1 {
+		OwmError.Check(err, false, "Some thing wrong When insert user: %s\n", user.Name)
 	}
 }

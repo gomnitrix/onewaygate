@@ -26,6 +26,7 @@ func registerRouter(app *iris.Application) {
 	web := app.Party("/owm")
 	{
 		web.Get("/login", server.WebLoginHandler)
+		web.Post("/register", server.RegisterHandler)
 		web.Get("/main", server.WebRunHandler)
 		web.Get("/table", server.WebTableViewHandler)
 	}

@@ -109,10 +109,21 @@ func NewStopHandler(ctx iris.Context) {
 	myDb.DeleteConts(target)
 }
 
-//func LoginHandler(ctx iris.Context) {
-//	session := sess.Start(ctx)
-//
-//}
+func LoginHandler(ctx iris.Context) {
+	session := sess.Start(ctx)
+	session.Set("authenticated", true)
+}
+
+func RegisterHandler(ctx iris.Context) {
+	defer HandlerRecover(ctx)
+	ctx.ContentType("application/json")
+	resp := GetSucceedResponse()
+	newUser := BuildUser(ctx)
+	//TODO 合法性检查
+	myDb.InputUser(newUser)
+	ctx.StatusCode(resp.Status)
+	ctx.JSON(resp.Resp)
+}
 
 func WebRunHandler(ctx iris.Context) {
 	ctx.Gzip(true)
