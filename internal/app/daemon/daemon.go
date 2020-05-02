@@ -12,6 +12,8 @@ import (
 	"syscall"
 	"time"
 
+	server2 "controller.com/api/server"
+
 	"controller.com/config"
 )
 
@@ -61,6 +63,7 @@ func init() {
 			if !isRunning() {
 				log.Printf("%s is not running\n", appName)
 			} else {
+				server2.CloseDb()
 				syscall.Kill(pidVal, syscall.SIGTERM) //kill
 			}
 		case "-h":

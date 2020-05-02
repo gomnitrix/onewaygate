@@ -2,7 +2,10 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+
+	"controller.com/internal/OwmError"
 
 	"github.com/kataras/iris/sessions"
 
@@ -22,15 +25,11 @@ var keyPath = internal.JoinPath(config.KeyPath)
 
 var (
 	cookieNameForSessionID = "owmsessionid"
-	sess                   = sessions.New(sessions.Config{Cookie: cookieNameForSessionID})
+	sess                   = sessions.New(sessions.Config{
+		Cookie:  cookieNameForSessionID,
+		Expires: config.SessionExpires,
+	})
 )
-
-func initDb() {
-	if myDb != nil {
-		return
-	}
-	myDb = sqlhelper.GetNewHelper()
-}
 
 func StartServe(app *iris.Application) {
 	pidisol.InitMap()
@@ -38,15 +37,6 @@ func StartServe(app *iris.Application) {
 	if err := app.Run(iris.TLS(config.Addr, certPath, keyPath)); err != nil {
 		//TODO fix log
 		fmt.Println(err.Error())
-	}
-}
-
-func Error404(ctx iris.Context) {
-	ctx.Gzip(true)
-	ctx.ContentType("text/html")
-	if err := ctx.View("main.html"); err != nil {
-		ctx.StatusCode(iris.StatusInternalServerError)
-		ctx.WriteString(err.Error())
 	}
 }
 
@@ -109,9 +99,38 @@ func NewStopHandler(ctx iris.Context) {
 	myDb.DeleteConts(target)
 }
 
+func Error404(ctx iris.Context) {
+	ErrorHandler(ctx, "404", "Page Not Found !")
+}
+
+func Error403(ctx iris.Context) {
+	ErrorHandler(ctx, "403", "You should login !")
+}
+func Error500(ctx iris.Context) {
+	ErrorHandler(ctx, "500", "Ops ! Something wrong, try again !")
+}
+
+func CheckSession(ctx iris.Context) {
+	defer HandlerRecover(ctx)
+	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
+		OwmError.Check(OwmError.GetAccessDeniedError("You Need To Login Firstly\n"), false, "MiddleWare: CheckSession\n")
+	}
+	ctx.Next()
+}
+
 func LoginHandler(ctx iris.Context) {
+	defer HandlerRecover(ctx)
 	session := sess.Start(ctx)
+	ctx.ContentType("application/json")
+	resp := GetSucceedResponse()
+	user := BuildUser(ctx)
+	passwd := myDb.QueryPasswd(user.Name)
+	if !ComparePasswd(passwd, user.Passwd) {
+		OwmError.Check(errors.New("PasswdNotEqualError"), false, "Your password is wrong")
+	}
 	session.Set("authenticated", true)
+	ctx.StatusCode(resp.Status)
+	ctx.JSON(resp.Resp)
 }
 
 func RegisterHandler(ctx iris.Context) {
@@ -199,99 +218,9 @@ func WebTableViewHandler(ctx iris.Context) {
 }
 
 func WebLoginHandler(ctx iris.Context) {
+	defer HandlerRecover(ctx)
 	ctx.Gzip(true)
 	ctx.ContentType("text/html")
-	internal.Response(ctx, "login.html")
+	err := ctx.View("login.html")
+	OwmError.Check(err, false, "View page error:login")
 }
-
-//type HttpHanlder func(w http.ResponseWriter, req *http.Request)
-//// old func
-//func (s server) StartServe() {
-//	mux := http.NewServeMux()
-//	for route, handler := range s.router {
-//		mux.HandleFunc(route, handler)
-//	}
-//	//TODO add log
-//	pidisol.InitMap()
-//	initDb()
-//	if err := http.ListenAndServe(s.addr, mux); err != nil {
-//		//TODO log
-//		fmt.Fprintf(s.out, err.Error())
-//	}
-//}
-
-//type server struct {
-//	in     io.ReadCloser
-//	out    io.Writer
-//	err    io.Writer
-//	addr   string
-//	router map[string]HttpHanlder
-//}
-
-//func NewServer(addr string, in io.ReadCloser, out, err io.Writer) server {
-//	ns := server{
-//		addr:   addr,
-//		router: nil,
-//		in:     in,
-//		out:    out,
-//		err:    err,
-//	}
-//	ns.router = map[string]HttpHanlder{
-//		"/run":  RunHandler,
-//		"/stop": StopHandler,
-//	}
-//	return ns
-//}
-
-//func RunHandler(w http.ResponseWriter, r *http.Request) {
-//	param, err := internal.GetParamJson(r)
-//	if err != nil {
-//		log.Println(err.Error())
-//		return
-//	}
-//	target := param["target"]
-//	targetName := param["TgtName"]
-//	if target != "" {
-//		// TODO check the target ID
-//		fmt.Fprintf(w, "the target:%s\n", target)
-//		fmt.Fprint(w, "Trying to create new manager for this target...\n")
-//	} else {
-//		fmt.Fprint(w, "no target, trying to create\n")
-//		target = internal.CreateTarget(targetName)
-//	}
-//	manager := internal.CreateRunManager(target)
-//	fmt.Fprintf(w, "Create successfully:\nthe manager ID is %s\nthe target ID is %s\n", manager, target)
-//
-//	// init the isolation relationship between manager and target
-//	myDb.InputConts(target, manager)
-//	go pidisol.PidIsolation(manager)
-//	mntisol.MountIsolation(manager, target)
-//	netisol.NetWorkIsolation(manager, target)
-//	//TODO add User ns isolation
-//}
-//
-//func StopHandler(w http.ResponseWriter, r *http.Request) {
-//	param, err := internal.GetParamJson(r)
-//	if err != nil {
-//		log.Println(err.Error())
-//		return
-//	}
-//	manager := param["manager"]
-//	target := param["target"]
-//	pidisol.SendStopToChan(manager)
-//	mntisol.UmountTarget(manager)
-//	netisol.RmTeeRules(manager, target)
-//
-//	for _, cont := range param {
-//		if cont == "" {
-//			continue
-//		}
-//		err := internal.RmContainer(cont)
-//		if err != nil {
-//			log.Println(err)
-//			fmt.Fprintf(w, "remove %s failed\n", cont)
-//		}
-//		fmt.Fprintf(w, "%s removed\n", cont)
-//	}
-//	myDb.DeleteConts(target)
-//}

@@ -8,8 +8,6 @@ import (
 	"regexp"
 	"runtime"
 
-	"github.com/kataras/iris"
-
 	"controller.com/config"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -130,13 +128,6 @@ func GetJsonSata(v interface{}) string {
 		panic(err)
 	}
 	return string(tmp)
-}
-
-func Response(ctx iris.Context, html string) {
-	if err := ctx.View(html); err != nil {
-		ctx.StatusCode(iris.StatusInternalServerError)
-		ctx.WriteString(err.Error())
-	}
 }
 
 //func GetLogPath() string {

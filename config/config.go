@@ -86,6 +86,8 @@ const (
 	MaxOpenConns    = 20
 )
 
+const SessionExpires = time.Duration(500) * time.Minute
+
 const Title = `
   ______   ____    __    ____ .___  ___.  __  
  /  __  \  \   \  /  \  /   / |   \/   | |  | 

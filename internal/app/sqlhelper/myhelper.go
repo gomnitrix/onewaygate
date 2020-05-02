@@ -157,12 +157,23 @@ func (helper *DbHelper) DeleteConts(targetID string) {
 
 func (helper *DbHelper) queryUser(name string) {
 	defer OwmError.Pack()
-	rows, err := helper.Db.Query("select * from userlist where uname = ?", name)
+	rows, err := helper.Db.Query("select * from userlist where uname=?", name)
 	OwmError.Check(err, false, "Query user %s error\n", name)
 	defer rows.Close()
 	if rows.Next() {
 		OwmError.Check(errors.New("UserExistError"), false, "User %s Already Exist\n", name)
 	}
+}
+
+func (helper *DbHelper) QueryPasswd(name string) string {
+	defer OwmError.Pack()
+	var passwd string
+	row := helper.Db.QueryRow("select passwd from userlist where uname=?", name)
+	err := row.Scan(&passwd)
+	if err == sql.ErrNoRows {
+		OwmError.Check(OwmError.GetUserNotExistError(name), false, "Query Password failed")
+	}
+	return passwd
 }
 
 func (helper *DbHelper) InputUser(user Model.User) {

@@ -21,14 +21,17 @@ func RunServerWithDaemon() {
 
 func registerRouter(app *iris.Application) {
 	app.OnErrorCode(iris.StatusNotFound, server.Error404)
+	app.OnErrorCode(iris.StatusForbidden, server.Error403)
+	app.OnErrorCode(iris.StatusInternalServerError, server.Error500)
 	app.Post("/run", server.NewRunHandler)
 	app.Post("/stop", server.NewStopHandler)
 	web := app.Party("/owm")
 	{
 		web.Get("/login", server.WebLoginHandler)
+		web.Post("/login", server.LoginHandler)
 		web.Post("/register", server.RegisterHandler)
-		web.Get("/main", server.WebRunHandler)
-		web.Get("/table", server.WebTableViewHandler)
+		web.Get("/main", server.CheckSession, server.WebRunHandler)
+		web.Get("/table", server.CheckSession, server.WebTableViewHandler)
 	}
 }
 
