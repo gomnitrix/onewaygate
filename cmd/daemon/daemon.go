@@ -30,8 +30,9 @@ func registerRouter(app *iris.Application) {
 		web.Get("/login", server.WebLoginHandler)
 		web.Post("/login", server.LoginHandler)
 		web.Post("/register", server.RegisterHandler)
-		web.Get("/main", server.CheckSession, server.WebRunHandler)
-		web.Get("/table", server.CheckSession, server.WebTableViewHandler)
+		web.Post("/logout", server.LogoutHandler)
+		web.Get("/main/{name:string}", server.CheckSession, server.WebRunHandler)
+		web.Get("/table/{name:string}", server.CheckSession, server.WebTableViewHandler)
 	}
 }
 

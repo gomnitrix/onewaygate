@@ -115,6 +115,11 @@ func CheckSession(ctx iris.Context) {
 	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
 		OwmError.Check(OwmError.GetAccessDeniedError("You Need To Login Firstly\n"), false, "MiddleWare: CheckSession\n")
 	}
+	reqUser := ctx.Params().GetDefault("name", "")
+	if user := sess.Start(ctx).Get("user"); user != reqUser {
+		OwmError.Check(OwmError.GetAccessDeniedError("Access Forbidden\n"), false, "MiddleWare: CheckSession\n")
+	}
+	ctx.ViewData("userName", reqUser)
 	ctx.Next()
 }
 
@@ -129,6 +134,7 @@ func LoginHandler(ctx iris.Context) {
 		OwmError.Check(errors.New("PasswdNotEqualError"), false, "Your password is wrong")
 	}
 	session.Set("authenticated", true)
+	session.Set("user", user.Name)
 	ctx.StatusCode(resp.Status)
 	ctx.JSON(resp.Resp)
 }
@@ -144,10 +150,20 @@ func RegisterHandler(ctx iris.Context) {
 	ctx.JSON(resp.Resp)
 }
 
+func LogoutHandler(ctx iris.Context) {
+	defer HandlerRecover(ctx)
+	ctx.ContentType("application/json")
+	session := sess.Start(ctx)
+	resp := GetSucceedResponse()
+	session.Set("authenticated", false)
+	session.Set("user", nil)
+	ctx.StatusCode(resp.Status)
+	ctx.JSON(resp.Resp)
+}
+
 func WebRunHandler(ctx iris.Context) {
 	ctx.Gzip(true)
 	ctx.ContentType("text/html")
-	ctx.ViewData("userName", "ifme")
 	//groups := map[string]string{"length": "3", "1": "group1", "2": "group2", "3": "group3"}
 	ctx.ViewData("index", [2]string{"0", "1"})
 	groups := [2](map[string]string){{"manager": "manager1", "1": "target1"}, {"manager": "manager2", "1": "target1", "2": "target2"}}

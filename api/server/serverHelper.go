@@ -50,7 +50,7 @@ func HandlerRecover(ctx iris.Context) {
 		var errCode = iris.StatusInternalServerError
 		var errMessage = "some thing wrong,please try again\n"
 		if e, ok := p.(OwmError.Error); ok {
-			fmt.Printf("%+v\n", e.Prev)
+			fmt.Printf("%+v", e.Prev)
 			//TODO log
 			cause := errors.Cause(e.Prev)
 			errMessage = cause.Error()
