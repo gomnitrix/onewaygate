@@ -157,8 +157,9 @@ func WebMainViewHandler(ctx iris.Context) {
 	defer HandlerRecover(ctx)
 	ctx.Gzip(true)
 	ctx.ContentType("text/html")
-	ctx.ViewData("index", [2]string{"0", "1"})
-	groups := [2](map[string]string){{"manager": "manager1", "1": "target1"}, {"manager": "manager2", "1": "target1", "2": "target2"}}
+	//groups := [2](map[string]string){{"manager": "manager1", "1": "target1"}, {"manager": "manager2", "1": "target1", "2": "target2"}}
+	groups := GetMainInfoByUser(ctx.Params().Get("name"))
+	ctx.ViewData("index", GetMainIndex(len(groups)))
 	bytesGroups, _ := json.Marshal(groups)
 	jsonGroups := string(bytesGroups)
 	ctx.ViewData("groupList", jsonGroups)
@@ -214,7 +215,7 @@ func WebTableViewHandler(ctx iris.Context) {
 	//		"Status": "Normal",
 	//	},
 	//}
-	targetList, managerList := GetContInfosByUser(ctx.Params().Get("name"))
+	targetList, managerList := GetTableInfosByUser(ctx.Params().Get("name"))
 	ctx.ViewData("mgrList", internal.GetJsonData(managerList))
 	ctx.ViewData("tgtList", internal.GetJsonData(targetList))
 	ctx.ViewData("index", GetTableIndex(len(managerList)))

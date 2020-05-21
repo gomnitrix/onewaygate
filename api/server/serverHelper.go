@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"controller.com/internal"
@@ -156,19 +157,37 @@ func RemoveByType(contID, contType string) string {
 	var manager string
 	if contType == "manager" {
 		targets = myDb.GetTargetsByMgr(contID)
+		manager = contID
 	} else if contType == "target" {
 		manager = myDb.GetManagerByTgt(contID)
+		targets = append(targets, contID)
 	}
 
 	for _, target := range targets {
 		filteredTgts = append(filteredTgts, internal.FilterContainerID(target))
 	}
-	manager = internal.FilterContainerID(contID)
+	manager = internal.FilterContainerID(manager)
 	message := RemoveContGroup(filteredTgts[0], manager) //TODO 如果改成一对多，这里要改成把所有targets都传入
 	return message
 }
 
-func GetContInfosByUser(userName string) ([][]map[string]string, [](map[string]string)) {
+func GetMainInfoByUser(userName string) []map[string]string {
+	defer OwmError.Pack()
+	var contsInfo [](map[string]string)
+	managers := myDb.GetMgrsByUser(userName)
+	for _, manager := range managers {
+		var tmpInfo = make(map[string]string)
+		tmpInfo["manager"] = manager
+		tmpTgtsID := myDb.GetTargetsByMgr(manager)
+		for idx, target := range tmpTgtsID {
+			tmpInfo[strconv.Itoa(idx+1)] = target
+		}
+		contsInfo = append(contsInfo, tmpInfo)
+	}
+	return contsInfo
+}
+
+func GetTableInfosByUser(userName string) ([][]map[string]string, [](map[string]string)) {
 	defer OwmError.Pack()
 	var mgrsInfo [](map[string]string)
 	var tgtsInfo [][]map[string]string
@@ -188,6 +207,13 @@ func GetContInfosByUser(userName string) ([][]map[string]string, [](map[string]s
 		tgtsInfo = append(tgtsInfo, tmpTgtsInfo)
 	}
 	return tgtsInfo, mgrsInfo
+}
+func GetMainIndex(num int) []string {
+	var tmp []string
+	for i := 0; i < num; i++ {
+		tmp = append(tmp, strconv.Itoa(i))
+	}
+	return tmp
 }
 
 func GetTableIndex(num int) []int {
