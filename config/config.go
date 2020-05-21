@@ -8,6 +8,7 @@ import (
 
 var file *os.File
 var ELog *log.Logger
+var Debug = false
 
 //func init() {
 //	file, err := os.OpenFile(logPath+"log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)

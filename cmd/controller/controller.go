@@ -12,12 +12,13 @@ import (
 )
 
 func main() {
-	var flDaemon, fullDaemon bool
+	var flDaemon, fullDaemon, flDebug bool
 	flag.BoolVar(&flDaemon, "d", false, "Enable daemon mode")
 	flag.BoolVar(&fullDaemon, "daemon", false, "Enable daemon mode")
+	flag.BoolVar(&flDebug, "debug", false, "Enable debug mode")
 	flag.Parse()
 
-	if flDaemon || fullDaemon {
+	if flDaemon || fullDaemon || flDebug {
 		daemon.RunServerWithDaemon()
 		return
 	}

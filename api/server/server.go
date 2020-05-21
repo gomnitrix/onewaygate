@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"os"
 
 	"github.com/kataras/iris/middleware/logger"
 
@@ -27,6 +25,7 @@ var myDb *sqlhelper.DbHelper
 var certPath = internal.JoinPath(config.CertPath)
 var keyPath = internal.JoinPath(config.KeyPath)
 var logPath = config.LogPath
+var debug bool
 
 var (
 	cookieNameForSessionID = "owmsessionid"
@@ -37,12 +36,10 @@ var (
 )
 
 func StartServe(app *iris.Application) {
+	debug = config.Debug
 	f := newLogFile()
 	defer f.Close()
-	app.Logger().SetOutput(io.MultiWriter(f, os.Stdout))
-	// or 使用下面这个
-	// 日志只生成到文件
-	//app.Logger().SetOutput(f)
+	ChooseLogOutput(app, f)
 	requestLogger := logger.New(logger.Config{
 		// Status displays status code
 		Status: true,
@@ -65,8 +62,10 @@ func StartServe(app *iris.Application) {
 	pidisol.InitMap()
 	initDb()
 	if err := app.Run(iris.TLS(config.Addr, certPath, keyPath)); err != nil {
-		//TODO fix log
-		fmt.Println(err.Error())
+		if debug {
+			fmt.Println(err.Error())
+		}
+		app.Logger().Errorf("server.go: Func StartServe, line 66. Error: %s", err.Error())
 	}
 }
 

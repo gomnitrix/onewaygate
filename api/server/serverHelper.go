@@ -63,7 +63,9 @@ func HandlerRecover(ctx iris.Context) {
 		var errCode = iris.StatusInternalServerError
 		var errMessage = "some thing wrong,please try again\n"
 		if e, ok := p.(OwmError.Error); ok {
-			fmt.Printf("%+v", e.Prev)
+			if debug {
+				fmt.Printf("%+v", e.Prev)
+			}
 			flog.Errorf("%+v", e.Prev)
 			cause := errors.Cause(e.Prev)
 			errMessage = cause.Error()
@@ -87,7 +89,9 @@ func HandlerRecover(ctx iris.Context) {
 				}
 			}
 		} else {
-			fmt.Sprint(p)
+			if debug {
+				fmt.Sprint(p)
+			}
 			flog.Error(p)
 		}
 		failResp := GetFailedResponse(errCode, errMessage)
@@ -128,6 +132,14 @@ func newLogFile() *os.File {
 		panic(err)
 	}
 	return f
+}
+
+func ChooseLogOutput(app *iris.Application, f *os.File) {
+	if debug {
+		app.Logger().SetOutput(io.MultiWriter(f, os.Stdout))
+		return
+	}
+	app.Logger().SetOutput(f)
 }
 
 func ErrorHandler(ctx iris.Context, errCode string, errMessage string) {

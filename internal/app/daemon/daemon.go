@@ -43,13 +43,16 @@ func init() {
 		cmd := ""
 		if l := len(os.Args); l > 1 {
 			cmd = os.Args[l-1]
-			if (cmd == "daemon" || cmd == "-d" || cmd == "stop" || cmd == "-h") && l > 2 {
+			if (cmd == "--daemon" || cmd == "--debug" || cmd == "-d" || cmd == "stop" || cmd == "-h") && l > 2 {
 				fmt.Printf("Usage: %s, to use server: -d|daemon|stop|-h\n", appName)
 				os.Exit(0)
 			}
 		}
 		switch cmd {
-		case "daemon":
+		case "--debug":
+			config.Debug = true
+			return
+		case "--daemon":
 			fallthrough
 		case "-d":
 			if isRunning() {
@@ -63,7 +66,6 @@ func init() {
 			if !isRunning() {
 				log.Printf("%s is not running\n", appName)
 			} else {
-				server2.CloseDb()
 				syscall.Kill(pidVal, syscall.SIGTERM) //kill
 			}
 		case "-h":
@@ -124,11 +126,11 @@ func handleSignals() {
 		case syscall.SIGINT:
 			fallthrough
 		case syscall.SIGTERM:
-			log.Printf("[%d] %s stop graceful", os.Getpid(), appName)
+			fmt.Printf("[%d] %s stop graceful", os.Getpid(), appName)
 			if srv != nil {
 				srv.shutdown()
 			} else {
-				log.Printf("[%d] %s stopped.", os.Getpid(), appName)
+				fmt.Printf("[%d] %s stopped.", os.Getpid(), appName)
 			}
 			os.Exit(1)
 		}
@@ -174,8 +176,9 @@ func (this *server) fork() error {
 
 //关闭服务
 func (this *server) shutdown() {
+	server2.CloseDb()
 	this.SetKeepAlivesEnabled(false)
 	this.cm.close(TimeDeadLine)
 	this.listener.Close()
-	log.Printf("[%d] %s stopped.", os.Getpid(), appName)
+	fmt.Printf("[%d] %s stopped.", os.Getpid(), appName)
 }

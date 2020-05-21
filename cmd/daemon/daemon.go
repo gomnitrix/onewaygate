@@ -5,7 +5,7 @@ import (
 	"controller.com/config"
 	"controller.com/internal"
 
-	//_ "controller.com/internal/app/daemon"
+	_ "controller.com/internal/app/daemon"
 
 	"github.com/kataras/iris"
 )
