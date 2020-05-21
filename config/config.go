@@ -40,8 +40,8 @@ const (
 const (
 	DEFAULTUNIXSOCKET = ""
 	RootPw            = "19981017"
-	AdoreNgPath       = "/home/omnitrix/template/adore-ng-master/adore-ng.tar"
-	HiderTarPath      = "/home/omnitrix/template/controller/bin/controller.tar"
+	AdoreNgPath       = "/home/omnitrix/gradproj/adore-ng-master/adore-ng.tar"
+	HiderTarPath      = "/home/omnitrix/gradproj/controller/bin/controller.tar"
 	MountIDPath       = "/var/lib/docker/image/aufs/layerdb/mounts/"
 	ContLayerPath     = "/var/lib/docker/aufs/mnt/"
 	MntDstPath        = "/mnt"

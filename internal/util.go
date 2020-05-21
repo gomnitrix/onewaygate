@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"runtime"
 
+	"controller.com/internal/OwmError"
+
 	"controller.com/config"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
@@ -122,12 +124,22 @@ func BuildPostRule(tgtIP, mgrIP string) []string {
 	return []string{"-d", tgtIP, "-j", "TEE", "--gateway", mgrIP}
 }
 
-func GetJsonSata(v interface{}) string {
+func GetJsonData(v interface{}) string {
 	tmp, err := json.Marshal(v)
 	if err != nil {
 		panic(err)
 	}
 	return string(tmp)
+}
+
+func StoM(v interface{}) map[string]string {
+	defer OwmError.Pack()
+	tmp, err := json.Marshal(v)
+	OwmError.Check(err, false, "Transformation failed\n")
+	var tmpMap map[string]string
+	err = json.Unmarshal(tmp, &tmpMap)
+	OwmError.Check(err, false, "Transformation failed\n")
+	return tmpMap
 }
 
 //func GetLogPath() string {

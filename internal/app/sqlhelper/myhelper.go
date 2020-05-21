@@ -74,7 +74,8 @@ func (helper *DbHelper) CreateTable() bool {
 	// create target<-->manager map table
 	sql := `CREATE TABLE IF NOT EXISTS contmap(
 		target VARCHAR(12) PRIMARY KEY NOT NULL,
-		manager VARCHAR(12) NOT NULL
+		manager VARCHAR(12) NOT NULL,
+		usrname VARCHAR(15) NOT NULL Default 'Admin'
 	); `
 
 	if _, err := helper.Db.Exec(sql); err != nil {
@@ -115,23 +116,58 @@ func (helper *DbHelper) GetChMap() map[string]chan bool {
 	return chmap
 }
 
-func (helper *DbHelper) InputConts(targetID, managerID string) {
+func (helper *DbHelper) GetTargetsByMgr(mgrID string) []string {
+	defer OwmError.Pack()
+	rows, err := helper.Db.Query("select target from contmap where manager=?", mgrID)
+	defer rows.Close()
+	OwmError.Check(err, false, "Query targets by manager: %s failed\n", mgrID)
+	var targets []string
+	for rows.Next() {
+		var target string
+		err = rows.Scan(&target)
+		OwmError.Check(err, false, "Scan targets by manager: %s failed\n", mgrID)
+		targets = append(targets, target)
+	}
+	return targets
+}
+
+func (helper *DbHelper) GetManagerByTgt(tgtID string) string {
+	defer OwmError.Pack()
+	row := helper.Db.QueryRow("select manager from contmap where target=?", tgtID)
+	var manager string
+	err := row.Scan(&manager)
+	if err == sql.ErrNoRows {
+		OwmError.Check(err, false, "Scan manager by target ID: %s failed\n", tgtID)
+	}
+	return manager
+}
+
+func (helper *DbHelper) GetMgrsByUser(userName string) []string {
+	defer OwmError.Pack()
+	rows, err := helper.Db.Query("select distinct manager from contmap where usrname=?", userName)
+	defer rows.Close()
+	OwmError.Check(err, false, "Query containers by user: %s failed\n", userName)
+	var managers []string
+	for rows.Next() {
+		var manager string
+		err = rows.Scan(&manager)
+		OwmError.Check(err, false, "Scan targets by manager: %s failed\n", userName)
+		managers = append(managers, manager)
+	}
+	return managers
+}
+
+func (helper *DbHelper) InputConts(usrName, targetID, managerID string) {
+	defer OwmError.Pack()
 	if targetID == "" || managerID == "" {
-		return
+		OwmError.Check(errors.New("Target or Manager ID could not be empty"), false, "Input Containers Failed\n")
 	}
-	result, err := helper.Db.Exec("insert INTO contmap(target,manager) values(?,?)", targetID, managerID)
-	if err != nil {
-		fmt.Printf("Insert data failed,err:%v\n", err)
-		return
-	}
-	rowsaffected, err := result.RowsAffected() //通过RowsAffected获取受影响的行数
-	if err != nil {
-		fmt.Printf("Get RowsAffected failed,err:%v\n", err)
-		return
-	}
+	result, err := helper.Db.Exec("insert INTO contmap(target,manager,usrname) values(?,?,?)", targetID, managerID, usrName)
+	OwmError.Check(err, false, "Insert Containers failed\n")
+	rowsaffected, err := result.RowsAffected()
+	OwmError.Check(err, false, "Get RowsAffected failed\n")
 	if rowsaffected != 1 {
-		fmt.Println("some stange things happened while inserting ")
-		return
+		OwmError.Check(err, false, "some stange things happened while inserting\n")
 	}
 }
 
