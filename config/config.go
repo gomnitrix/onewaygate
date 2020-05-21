@@ -1,8 +1,6 @@
 package config
 
 import (
-	"fmt"
-	"io"
 	"log"
 	"os"
 	"time"
@@ -11,18 +9,18 @@ import (
 var file *os.File
 var ELog *log.Logger
 
-func init() {
-	file, err := os.OpenFile(logPath+"log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		fmt.Println("open log failed")
-		return
-	}
-	ELog = log.New(io.MultiWriter(file, os.Stderr), "Error: ", log.Ldate|log.Ltime|log.Lshortfile)
-	return
-}
+//func init() {
+//	file, err := os.OpenFile(logPath+"log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+//	if err != nil {
+//		fmt.Println("open log failed")
+//		return
+//	}
+//	ELog = log.New(io.MultiWriter(file, os.Stderr), "Error: ", log.Ldate|log.Ltime|log.Lshortfile)
+//	return
+//}
 
 // 日志文件相对位置
-const logPath = "/C/Users/omnitrix/GoLand/src/controller.com/log/"
+const LogPath = "log/"
 const ServerPath = "api/server/"
 const TemplatePath = ServerPath + "template"
 const StaticPath = ServerPath + "static"

@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+
+	"github.com/kataras/iris/middleware/logger"
 
 	"controller.com/internal/OwmError"
 
@@ -22,6 +26,7 @@ var log = config.ELog
 var myDb *sqlhelper.DbHelper
 var certPath = internal.JoinPath(config.CertPath)
 var keyPath = internal.JoinPath(config.KeyPath)
+var logPath = config.LogPath
 
 var (
 	cookieNameForSessionID = "owmsessionid"
@@ -32,6 +37,31 @@ var (
 )
 
 func StartServe(app *iris.Application) {
+	f := newLogFile()
+	defer f.Close()
+	app.Logger().SetOutput(io.MultiWriter(f, os.Stdout))
+	// or 使用下面这个
+	// 日志只生成到文件
+	//app.Logger().SetOutput(f)
+	requestLogger := logger.New(logger.Config{
+		// Status displays status code
+		Status: true,
+		// IP displays request's remote address
+		IP: true,
+		// Method displays the http method
+		Method: true,
+		// Path displays the request path
+		Path: true,
+		// Query appends the url query to the Path.
+		Query: true,
+		// if !empty then its contents derives from `ctx.Values().Get("logger_message")
+		// will be added to the logs.
+		MessageContextKeys: []string{"logger_message"},
+		// if !empty then its contents derives from `ctx.GetHeader("User-Agent")
+		MessageHeaderKeys: []string{"User-Agent"},
+	})
+	app.UseGlobal(requestLogger)
+
 	pidisol.InitMap()
 	initDb()
 	if err := app.Run(iris.TLS(config.Addr, certPath, keyPath)); err != nil {

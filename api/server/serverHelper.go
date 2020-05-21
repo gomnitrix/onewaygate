@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"controller.com/internal"
 	"controller.com/internal/app/mntisol"
@@ -57,11 +59,12 @@ func BuildUser(ctx iris.Context) Model.User {
 
 func HandlerRecover(ctx iris.Context) {
 	if p := recover(); p != nil {
+		var flog = ctx.Application().Logger()
 		var errCode = iris.StatusInternalServerError
 		var errMessage = "some thing wrong,please try again\n"
 		if e, ok := p.(OwmError.Error); ok {
 			fmt.Printf("%+v", e.Prev)
-			//TODO log
+			flog.Errorf("%+v", e.Prev)
 			cause := errors.Cause(e.Prev)
 			errMessage = cause.Error()
 			switch cause.(type) {
@@ -84,8 +87,8 @@ func HandlerRecover(ctx iris.Context) {
 				}
 			}
 		} else {
-			//TODO log normal error
 			fmt.Sprint(p)
+			flog.Error(p)
 		}
 		failResp := GetFailedResponse(errCode, errMessage)
 		Reply(ctx, *failResp)
@@ -108,6 +111,23 @@ func initDb() {
 
 func CloseDb() {
 	myDb.Close()
+}
+
+// 按天生成日志文件
+func todayFilename() string {
+	today := time.Now().Format("20060102")
+	return today + ".log"
+}
+
+// 创建打开文件
+func newLogFile() *os.File {
+
+	filename := internal.JoinPath(logPath + todayFilename())
+	f, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		panic(err)
+	}
+	return f
 }
 
 func ErrorHandler(ctx iris.Context, errCode string, errMessage string) {

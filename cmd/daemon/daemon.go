@@ -44,12 +44,6 @@ func registerRouter(app *iris.Application) {
 
 //{contId,contName,contType string}
 func initApp(app *iris.Application) {
-	//MyUpgrader := kgorilla.Upgrader(*mytmpu)
-	//ws := websocket.New(MyUpgrader, websocket.Events{})
-	//ws.OnConnect = server.TerminalHandler
-	//ws.OnDisconnect = func(c *websocket.Conn) {
-	//	log.Printf("[%s] Disconnected from server", c.ID())
-	//}
 	temp := iris.Django(templatePath, ".html")
 	temp.Reload(true)
 	app.HandleDir("/static", staticPath)
