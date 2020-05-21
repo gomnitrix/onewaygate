@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -142,10 +143,9 @@ func StoM(v interface{}) map[string]string {
 	return tmpMap
 }
 
-//func GetLogPath() string {
-//	dir,err := os.Getwd()
-//	if err!=nil{
-//		panic("get log path failed")
-//	}
-//	return
-//}
+func StrToMD5(str string) string {
+	data := []byte(str)
+	has := md5.Sum(data)
+	md5str := fmt.Sprintf("%x", has) //将[]byte转成16进制
+	return md5str
+}

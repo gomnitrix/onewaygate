@@ -86,7 +86,7 @@ func (helper *DbHelper) CreateTable() bool {
 	// create user Table
 	sql = `CREATE TABLE IF NOT EXISTS userlist(
 		uname VARCHAR(12) PRIMARY KEY NOT NULL,
-		passwd VARCHAR(12) NOT NULL
+		passwd VARCHAR(32) NOT NULL
 	); `
 	if _, err := helper.Db.Exec(sql); err != nil {
 		fmt.Println("create userlist table failed:", err)

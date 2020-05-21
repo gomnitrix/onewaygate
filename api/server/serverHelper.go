@@ -54,6 +54,7 @@ func BuildUser(ctx iris.Context) Model.User {
 	newUser := Model.User{}
 	err := ctx.ReadForm(&newUser)
 	OwmError.Check(err, false, "Load form into User struct failed")
+	newUser.Passwd = internal.StrToMD5(newUser.Passwd)
 	return newUser
 }
 
