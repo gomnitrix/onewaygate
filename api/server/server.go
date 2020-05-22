@@ -295,6 +295,9 @@ func WebContainerHandler(ctx iris.Context) {
 	contId := ctx.URLParamDefault("contId", "")
 	contName := ctx.URLParamDefault("contName", "")
 	contType := ctx.URLParamDefault("contType", "")
+	if contName == "" {
+		contName = internal.GetNameByID(contId)
+	}
 	ctx.ViewData("ContId", contId)
 	ctx.ViewData("ContType", contType)
 	ctx.ViewData("ContName", contName)

@@ -87,6 +87,13 @@ func ListContainer() ([]types.Container, error) {
 	return containers, err
 }
 
+func GetNameByID(contID string) string {
+	defer OwmError.Pack()
+	infos, err := cli.ContainerInspect(ctx, contID)
+	OwmError.Check(err, false, "Inspect Container %s failed\n", contID)
+	return infos.Name[1:]
+}
+
 func GetIDByName(name string) (string, error) {
 	containers, err := ListContainer()
 	if err != nil {
