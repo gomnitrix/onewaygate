@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kataras/golog"
+
 	"controller.com/internal"
 	"controller.com/internal/app/mntisol"
 	"controller.com/internal/app/netisol"
@@ -53,9 +55,25 @@ func BuildUser(ctx iris.Context) Model.User {
 	defer OwmError.Pack()
 	newUser := Model.User{}
 	err := ctx.ReadForm(&newUser)
-	OwmError.Check(err, false, "Load form into User struct failed")
+	OwmError.Check(err, "Load form into User struct failed")
 	newUser.Passwd = internal.StrToMD5(newUser.Passwd)
 	return newUser
+}
+
+func HandlerRecoverForShell(ctx iris.Context) {
+	if p := recover(); p != nil {
+		var flog = ctx.Application().Logger()
+		var errMessage string
+		if e, ok := p.(OwmError.Error); ok {
+			flog.Errorf("%+v", e.Prev)
+			cause := errors.Cause(e.Prev)
+			errMessage = cause.Error()
+		} else {
+			flog.Error(p)
+			errMessage = fmt.Sprint(p)
+		}
+		ctx.WriteString(errMessage)
+	}
 }
 
 func HandlerRecover(ctx iris.Context) {
@@ -147,10 +165,10 @@ func ErrorHandler(ctx iris.Context, errCode string, errMessage string) {
 	defer HandlerRecover(ctx)
 	ctx.ViewData("message", errMessage)
 	err := ctx.View(errCode + ".html")
-	OwmError.Check(err, false, "return %s page failed", errCode)
+	OwmError.Check(err, "return %s page failed", errCode)
 }
 
-func CreateContGroup(userName, tgtName, mgrName string) (resp string) {
+func CreateContGroup(userName, tgtName, mgrName string, mylog *golog.Logger) (resp string) {
 	defer OwmError.Pack()
 	target := internal.CreateTarget(tgtName)
 	manager := internal.CreateRunManager(target, mgrName)
@@ -158,10 +176,9 @@ func CreateContGroup(userName, tgtName, mgrName string) (resp string) {
 
 	// init the isolation relationship between manager and target
 	myDb.InputConts(userName, target, manager)
-	go pidisol.PidIsolation(manager)
+	go pidisol.PidIsolation(manager, mylog)
 	mntisol.MountIsolation(manager, target)
 	netisol.NetWorkIsolation(manager, target)
-	//TODO add User ns isolation
 
 	return
 }
@@ -177,7 +194,7 @@ func RemoveContGroup(target, manager string) (resp string) {
 	resp = ""
 	for _, cont := range conts {
 		err := internal.RmContainer(cont)
-		OwmError.Check(err, false, "remove %s failed\n", cont)
+		OwmError.Check(err, "remove %s failed\n", cont)
 		resp = resp + fmt.Sprintf("%s removed\n", cont)
 	}
 	myDb.DeleteConts(target)
@@ -186,8 +203,9 @@ func RemoveContGroup(target, manager string) (resp string) {
 
 func RemoveByType(contID, contType string) string {
 	defer OwmError.Pack()
-	var filteredTgts, targets []string
+	var targets []string
 	var manager string
+	contID = internal.FilterContainerID(contID)
 	if contType == "manager" {
 		targets = myDb.GetTargetsByMgr(contID)
 		manager = contID
@@ -195,12 +213,7 @@ func RemoveByType(contID, contType string) string {
 		manager = myDb.GetManagerByTgt(contID)
 		targets = append(targets, contID)
 	}
-
-	for _, target := range targets {
-		filteredTgts = append(filteredTgts, internal.FilterContainerID(target))
-	}
-	manager = internal.FilterContainerID(manager)
-	message := RemoveContGroup(filteredTgts[0], manager) //TODO 如果改成一对多，这里要改成把所有targets都传入
+	message := RemoveContGroup(targets[0], manager) //TODO 如果改成一对多，这里要改成把所有targets都传入
 	return message
 }
 
@@ -300,7 +313,7 @@ func AttachTty(ctx iris.Context, contID string) {
 		return true
 	}
 	conn, err := mytmpu.Upgrade(w, r, nil)
-	OwmError.Check(err, false, "Upgrade failed\n")
+	OwmError.Check(err, "Upgrade failed\n")
 	defer conn.Close()
 	// 关闭I/O流
 	defer tty.Close()

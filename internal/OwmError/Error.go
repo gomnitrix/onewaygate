@@ -20,10 +20,10 @@ func (e Error) Unwrap() error {
 	return e.Prev
 }
 
-func Check(err error, wrapped bool, format string, args ...interface{}) {
+func Check(err error, format string, args ...interface{}) {
 	if err != nil {
 		panic(Error{
-			Wrapped: wrapped,
+			Wrapped: false,
 			Message: fmt.Sprintf(format, args),
 			Prev:    err,
 		})

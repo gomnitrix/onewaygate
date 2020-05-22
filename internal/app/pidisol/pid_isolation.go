@@ -5,6 +5,9 @@ import (
 	"os"
 	"time"
 
+	"controller.com/internal/OwmError"
+	"github.com/kataras/golog"
+
 	"controller.com/internal/app/sqlhelper"
 
 	"controller.com/config"
@@ -18,14 +21,13 @@ var dstPath = config.ExecFileDstPath
 var cli = internal.InitClient()
 var ctx = context.Background()
 var chMap map[string]chan bool
-var log = config.ELog
 
 type HiderBoss struct {
 	realPidsLast  []string
 	managerContID string
 }
 
-func InitMap() {
+func InitMap(mylog *golog.Logger) {
 	if chMap != nil {
 		return
 	}
@@ -33,17 +35,17 @@ func InitMap() {
 	defer myDb.Close()
 	chMap = myDb.GetChMap()
 	for mgr, _ := range chMap {
-		go PidIsolation(mgr)
+		go PidIsolation(mgr, mylog)
 	}
 }
 
-func PidIsolation(managerID string) {
+func PidIsolation(managerID string, mylog *golog.Logger) {
+	defer HandlerRecoverForPidIsol(mylog)
 	newBoss := getNewBoss(managerID)
 	newBoss.Isolation()
 }
 
 func getNewBoss(managerID string) *HiderBoss {
-	//TODO check id
 	return &HiderBoss{
 		realPidsLast:  []string{},
 		managerContID: managerID,
@@ -51,6 +53,7 @@ func getNewBoss(managerID string) *HiderBoss {
 }
 
 func (boss *HiderBoss) Isolation() {
+	defer OwmError.Pack()
 	managerID := boss.managerContID
 	if _, ok := chMap[managerID]; !ok {
 		chMap[managerID] = make(chan bool)
@@ -82,6 +85,7 @@ func SendStopToChan(managerID string) {
 }
 
 func (boss *HiderBoss) hideRealPids() {
+	defer OwmError.Pack()
 	realPids := getRealPidsInManager(boss.managerContID)
 	purePids := boss.getDiffPidsFromLast(realPids)
 	if len(purePids) == 0 {
@@ -89,10 +93,7 @@ func (boss *HiderBoss) hideRealPids() {
 	}
 	boss.saveLastPids(realPids)
 	cmdHide := append([]string{config.HiderPath, "hide"}, purePids...)
-	err := internal.RunCommandInManager(boss.managerContID, cmdHide)
-	if err != nil {
-		log.Println(err)
-	}
+	internal.RunCommandInManager(boss.managerContID, cmdHide)
 }
 
 func (boss *HiderBoss) saveLastPids(realPids []string) {
@@ -110,29 +111,22 @@ func (boss HiderBoss) getDiffPidsFromLast(realPids []string) []string {
 }
 
 func (boss HiderBoss) removeAdoreNg() {
+	defer OwmError.Pack()
 	rmmodCmd := []string{config.AvaPath, "U"}
-	err := internal.RunCommandInManager(boss.managerContID, rmmodCmd)
-	if err != nil {
-		log.Println(err)
-	}
+	internal.RunCommandInManager(boss.managerContID, rmmodCmd)
 }
 
 func prepareHideEnv(managerID string) {
-	// TODO need to be refactored
-	//prepareAdoreNg(managerID)
+	defer OwmError.Pack()
 	insmodCmd := []string{"insmod", config.KoPath}
-	err := internal.RunCommandInManager(managerID, insmodCmd)
-	if err != nil {
-		log.Println(err)
-	}
+	internal.RunCommandInManager(managerID, insmodCmd)
 	prepareHiderInManager(managerID)
 }
 
 func getRealPidsInManager(managerID string) (pids []string) {
+	defer OwmError.Pack()
 	body, err := cli.ContainerTop(ctx, managerID, []string{})
-	if err != nil {
-		panic(err)
-	}
+	OwmError.Check(err, "Get Container Top process failed.\n")
 	index := internal.FirstIndexOf("PID", body.Titles)
 	pids = make([]string, 0, config.MaxPrePidsNum)
 	for _, v := range body.Processes {
@@ -142,35 +136,28 @@ func getRealPidsInManager(managerID string) (pids []string) {
 }
 
 func prepareHiderInManager(managerID string) {
+	defer OwmError.Pack()
 	hiderReader := getHider()
+	defer hiderReader.Close()
 	err := cli.CopyToContainer(ctx, managerID, dstPath, hiderReader, types.CopyToContainerOptions{})
-	hiderReader.Close()
-	if err != nil {
-		panic(err)
-	}
+	OwmError.Check(err, "Copy file to Container failed.\n")
 }
 
 //将controller复制到目标路径，以隐藏进程
 func getHider() (reader *os.File) {
+	defer OwmError.Pack()
 	reader, err := os.Open(config.HiderTarPath)
-	if err != nil {
-		panic(err)
-	}
-	return
-}
-func getAdoreNg() (reader *os.File) {
-	reader, err := os.Open(adoreNgPath)
-	if err != nil {
-		panic(err)
-	}
+	OwmError.Check(err, "Open Tar file path failed.\n")
 	return
 }
 
-func prepareAdoreNg(managerID string) {
-	adoreReader := getAdoreNg()
-	err := cli.CopyToContainer(ctx, managerID, dstPath, adoreReader, types.CopyToContainerOptions{})
-	adoreReader.Close()
-	if err != nil {
-		panic(err)
+func HandlerRecoverForPidIsol(flog *golog.Logger) {
+	if p := recover(); p != nil {
+		if e, ok := p.(OwmError.Error); ok {
+			flog.Errorf("%+v", e.Prev)
+		} else {
+			flog.Error(p)
+		}
+		panic(p) //使程序崩溃 避免在错误下继续运行
 	}
 }

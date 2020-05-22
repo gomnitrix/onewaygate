@@ -1,13 +1,9 @@
 package config
 
 import (
-	"log"
-	"os"
 	"time"
 )
 
-var file *os.File
-var ELog *log.Logger
 var Debug = false
 
 //func init() {
@@ -55,7 +51,7 @@ const (
 //server config
 const (
 	Addr        = ":8080"
-	Host        = "http://127.0.0.1"
+	Host        = "https://127.0.0.1"
 	PidFilePath = "/var/run/owmirror.pid"
 	AppName     = "owmirror"
 	EnvName     = "owm_Daemon"

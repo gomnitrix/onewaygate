@@ -12,14 +12,11 @@ import (
 
 	"controller.com/config"
 	"controller.com/internal"
-	"controller.com/internal/app/mntisol"
-	"controller.com/internal/app/netisol"
 	"controller.com/internal/app/pidisol"
 	"controller.com/internal/app/sqlhelper"
 	"github.com/kataras/iris"
 )
 
-var log = config.ELog
 var myDb *sqlhelper.DbHelper
 var certPath = internal.JoinPath(config.CertPath)
 var keyPath = internal.JoinPath(config.KeyPath)
@@ -50,7 +47,7 @@ func StartServe(app *iris.Application) {
 	})
 	app.UseGlobal(requestLogger)
 
-	pidisol.InitMap()
+	pidisol.InitMap(app.Logger())
 	initDb()
 	if err := app.Run(iris.TLS(config.Addr, certPath, keyPath)); err != nil {
 		if debug {
@@ -61,46 +58,31 @@ func StartServe(app *iris.Application) {
 }
 
 func NewRunHandler(ctx iris.Context) {
+	defer HandlerRecoverForShell(ctx)
 	var payload map[string]string
 	err := ctx.ReadJSON(&payload)
-	if err != nil {
-		ctx.StatusCode(iris.StatusBadRequest)
-		ctx.WriteString(err.Error())
-		return
-	}
+	OwmError.Check(err, "Read params failed.\n")
 	//target := payload["target"]
 	targetName := payload["TgtName"]
-	resp := CreateContGroup("Admin", targetName, "")
+	managerName := payload["MgrName"]
+	resp := CreateContGroup("Admin", targetName, managerName, ctx.Application().Logger())
 	ctx.Writef(resp)
 }
 
 func NewRemoveHandler(ctx iris.Context) {
+	defer HandlerRecoverForShell(ctx)
 	var payload map[string]string
 	err := ctx.ReadJSON(&payload)
-	if err != nil {
-		ctx.StatusCode(iris.StatusBadRequest)
-		ctx.WriteString(err.Error())
-		return
-	}
+	OwmError.Check(err, "Read params failed.\n")
 	manager := payload["manager"]
 	target := payload["target"]
-	pidisol.SendStopToChan(manager)
-	mntisol.UmountTarget(manager)
-	netisol.RmTeeRules(manager, target)
-	conts := [2]string{manager, target}
-
-	for _, cont := range conts {
-		if cont == "" {
-			continue
-		}
-		err := internal.RmContainer(cont)
-		if err != nil {
-			log.Println(err)
-			ctx.Writef("remove %s failed\n", cont)
-		}
-		ctx.Writef("%s removed\n", cont)
+	var message string
+	if manager != "" {
+		message = RemoveByType(manager, "manager")
+	} else {
+		message = RemoveByType(target, "target")
 	}
-	myDb.DeleteConts(target)
+	ctx.WriteString(message)
 }
 
 func Error404(ctx iris.Context) {
@@ -119,7 +101,7 @@ func WebLoginHandler(ctx iris.Context) {
 	ctx.Gzip(true)
 	ctx.ContentType("text/html")
 	err := ctx.View("login.html")
-	OwmError.Check(err, false, "View page error:login")
+	OwmError.Check(err, "View page error:login")
 }
 
 func LoginHandler(ctx iris.Context) {
@@ -130,7 +112,7 @@ func LoginHandler(ctx iris.Context) {
 	user := BuildUser(ctx)
 	passwd := myDb.QueryPasswd(user.Name)
 	if !ComparePasswd(passwd, user.Passwd) {
-		OwmError.Check(errors.New("PasswdNotEqualError\n"), false, "Your password is wrong\n")
+		OwmError.Check(errors.New("PasswdNotEqualError\n"), "Your password is wrong\n")
 	}
 	session.Set("authenticated", true)
 	session.Set("user", user.Name)
@@ -163,11 +145,11 @@ func LogoutHandler(ctx iris.Context) {
 func CheckSession(ctx iris.Context) {
 	defer HandlerRecover(ctx)
 	if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-		OwmError.Check(OwmError.GetAccessDeniedError("You Need To Login Firstly\n"), false, "MiddleWare: CheckSession\n")
+		OwmError.Check(OwmError.GetAccessDeniedError("You Need To Login Firstly\n"), "MiddleWare: CheckSession\n")
 	}
 	reqUser := ctx.Params().GetDefault("name", "")
 	if user := sess.Start(ctx).Get("user"); user != reqUser {
-		OwmError.Check(OwmError.GetAccessDeniedError("Access Forbidden\n"), false, "MiddleWare: CheckSession\n")
+		OwmError.Check(OwmError.GetAccessDeniedError("Access Forbidden\n"), "MiddleWare: CheckSession\n")
 	}
 	ctx.ViewData("userName", reqUser)
 	ctx.Next()
@@ -182,7 +164,7 @@ func WebMainViewHandler(ctx iris.Context) {
 	ctx.ViewData("index", GetMainIndex(len(groups)))
 	ctx.ViewData("groupList", internal.GetJsonData(groups))
 	err := ctx.View("main.html")
-	OwmError.Check(err, false, "View page error: Main")
+	OwmError.Check(err, "View page error: Main")
 }
 
 func WebTableViewHandler(ctx iris.Context) {
@@ -206,7 +188,7 @@ func AddHandler(ctx iris.Context) {
 	usrName := ctx.Params().Get("name")
 	targetName := ctx.FormValue("target")
 	managerName := ctx.FormValue("manager")
-	message := CreateContGroup(usrName, targetName, managerName)
+	message := CreateContGroup(usrName, targetName, managerName, ctx.Application().Logger())
 	resp.Resp.Message = message
 	ctx.StatusCode(resp.Status)
 	ctx.JSON(resp.Resp)
@@ -217,7 +199,7 @@ func WebAddHandler(ctx iris.Context) {
 	ctx.Gzip(true)
 	ctx.ContentType("text/html")
 	err := ctx.View("add.html")
-	OwmError.Check(err, false, "View page error:add")
+	OwmError.Check(err, "View page error:add")
 }
 
 func WebRemoveHandler(ctx iris.Context) {
@@ -246,7 +228,7 @@ func WebContainerHandler(ctx iris.Context) {
 	ctx.ViewData("ContType", contType)
 	ctx.ViewData("ContName", contName)
 	err := ctx.View("container.html")
-	OwmError.Check(err, false, "View page error:container")
+	OwmError.Check(err, "View page error:container")
 }
 
 func WebTerminalHandler(ctx iris.Context) {
@@ -256,7 +238,7 @@ func WebTerminalHandler(ctx iris.Context) {
 	contID := ctx.Params().Get("contid")
 	ctx.ViewData("contID", contID)
 	err := ctx.View("terminal.html")
-	OwmError.Check(err, false, "View page error: Terminal")
+	OwmError.Check(err, "View page error: Terminal")
 }
 
 func TerminalHandler(ctx iris.Context) {
@@ -269,12 +251,12 @@ func WebProfileHandler(ctx iris.Context) {
 	defer HandlerRecover(ctx)
 	ctx.ContentType("text/html")
 	err := ctx.View("profile.html")
-	OwmError.Check(err, false, "View page error: Profile")
+	OwmError.Check(err, "View page error: Profile")
 }
 
 func WebInfoHandler(ctx iris.Context) {
 	defer HandlerRecover(ctx)
 	ctx.ContentType("text/html")
 	err := ctx.View("Infos.html")
-	OwmError.Check(err, false, "View page error: Info")
+	OwmError.Check(err, "View page error: Info")
 }

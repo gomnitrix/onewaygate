@@ -76,19 +76,15 @@ func FirstIndexOf(value string, array []string) int {
 	return -1
 }
 
-func RunCommandInManager(managerID string, cmd []string) error {
+func RunCommandInManager(managerID string, cmd []string) {
+	OwmError.Pack()
 	execId, err := cli.ContainerExecCreate(ctx, managerID, types.ExecConfig{
 		Privileged: true,
 		Cmd:        cmd,
 	})
-	if err != nil {
-		return err
-	}
+	OwmError.Check(err, "Exec Command create failed.\n")
 	err = cli.ContainerExecStart(ctx, execId.ID, types.ExecStartCheck{})
-	if err != nil {
-		return err
-	}
-	return nil
+	OwmError.Check(err, "Exec Command start failed.\n")
 }
 
 func IsDigitAll(targetString string) bool {
@@ -128,17 +124,17 @@ func BuildPostRule(tgtIP, mgrIP string) []string {
 func GetJsonData(v interface{}) string {
 	defer OwmError.Pack()
 	tmp, err := json.Marshal(v)
-	OwmError.Check(err, false, "Json Marshal failed\n")
+	OwmError.Check(err, "Json Marshal failed\n")
 	return string(tmp)
 }
 
 func StoM(v interface{}) map[string]string {
 	defer OwmError.Pack()
 	tmp, err := json.Marshal(v)
-	OwmError.Check(err, false, "Transformation failed\n")
+	OwmError.Check(err, "Transformation failed\n")
 	var tmpMap map[string]string
 	err = json.Unmarshal(tmp, &tmpMap)
-	OwmError.Check(err, false, "Transformation failed\n")
+	OwmError.Check(err, "Transformation failed\n")
 	return tmpMap
 }
 

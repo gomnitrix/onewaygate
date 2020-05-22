@@ -18,29 +18,29 @@ var cli = InitClient()
 var ctx = context.Background()
 
 func createNewContainer(containerName, image string, hostConfig *container.HostConfig) string {
+	defer OwmError.Pack()
 	resp, err := cli.ContainerCreate(ctx, &container.Config{
 		Cmd:   []string{"/bin/bash"},
 		Image: image,
 		Tty:   true,
 	}, hostConfig, nil, containerName)
-	if err != nil {
-		panic(err)
-	}
+	OwmError.Check(err, "")
 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		panic(err)
+		OwmError.Check(err, "")
 	}
 	return resp.ID
 }
 
 func CreateTarget(targetName string) (targetID string) {
-	targetID = createNewContainer(targetName, config.Image, nil)[0:12] //TODO fix the name
+	targetID = createNewContainer(targetName, config.Image, nil)[0:12]
 	runContainer(targetID)
 	return
 }
 
 func runContainer(ID string) {
+	defer OwmError.Pack()
 	if err := cli.ContainerStart(ctx, ID, types.ContainerStartOptions{}); err != nil {
-		panic(err)
+		OwmError.Check(err, "")
 	}
 }
 
@@ -90,7 +90,7 @@ func ListContainer() ([]types.Container, error) {
 func GetNameByID(contID string) string {
 	defer OwmError.Pack()
 	infos, err := cli.ContainerInspect(ctx, contID)
-	OwmError.Check(err, false, "Inspect Container %s failed\n", contID)
+	OwmError.Check(err, "Inspect Container %s failed\n", contID)
 	return infos.Name[1:]
 }
 
@@ -110,19 +110,18 @@ func GetIDByName(name string) (string, error) {
 	return "", errors.New("no container has this name: " + name)
 }
 
-func GetNetInfo(containerID string) (string, error) {
+func GetNetInfo(containerID string) string {
+	defer OwmError.Pack()
 	infos, err := cli.ContainerInspect(ctx, containerID)
-	if err != nil {
-		return "", err
-	}
+	OwmError.Check(err, "")
 	ipv4Addr := infos.NetworkSettings.IPAddress
-	return ipv4Addr, nil
+	return ipv4Addr
 }
 
 func GetContTableInfo(contID string, row *Model.ContainerRow) {
 	defer OwmError.Pack()
 	infos, err := cli.ContainerInspect(ctx, contID)
-	OwmError.Check(err, false, "Get Information of Container %s Failed\n", contID)
+	OwmError.Check(err, "Get Information of Container %s Failed\n", contID)
 	row.Name = infos.Name[1:]
 	row.ID = infos.ID[0:12]
 	row.Status = infos.State.Status
@@ -131,14 +130,14 @@ func GetContTableInfo(contID string, row *Model.ContainerRow) {
 func FilterContainerID(identity string) string {
 	defer OwmError.Pack()
 	if identity == "" {
-		OwmError.Check(errors.New("Empty Container Id or Name Detected\n"), false, "FilterID failed\n")
+		OwmError.Check(errors.New("Empty Container Id or Name Detected\n"), "FilterID failed\n")
 	}
 	containerConfig, err := cli.ContainerInspect(ctx, identity)
 	if err == nil && containerConfig.ID != "" {
 		return containerConfig.ID[0:12]
 	}
 	id, err := GetIDByName(identity)
-	OwmError.Check(err, false, "GetIDByName failed while filter ID: %s\n", identity)
+	OwmError.Check(err, "GetIDByName failed while filter ID: %s\n", identity)
 	return id[0:12]
 }
 
@@ -151,9 +150,9 @@ func GetTty(contID string) (tty types.HijackedResponse) {
 		Cmd:          []string{"/bin/bash"},
 		Tty:          true,
 	})
-	OwmError.Check(err, false, "Create Exec Failed, container ID: %s\n", contID)
+	OwmError.Check(err, "Create Exec Failed, container ID: %s\n", contID)
 
 	tty, err = cli.ContainerExecAttach(ctx, ir.ID, types.ExecStartCheck{Detach: false, Tty: true})
-	OwmError.Check(err, false, "Attach Exec Failed, container ID: %s\n", contID)
+	OwmError.Check(err, "Attach Exec Failed, container ID: %s\n", contID)
 	return
 }

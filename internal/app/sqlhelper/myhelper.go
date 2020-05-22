@@ -120,12 +120,12 @@ func (helper *DbHelper) GetTargetsByMgr(mgrID string) []string {
 	defer OwmError.Pack()
 	rows, err := helper.Db.Query("select target from contmap where manager=?", mgrID)
 	defer rows.Close()
-	OwmError.Check(err, false, "Query targets by manager: %s failed\n", mgrID)
+	OwmError.Check(err, "Query targets by manager: %s failed\n", mgrID)
 	var targets []string
 	for rows.Next() {
 		var target string
 		err = rows.Scan(&target)
-		OwmError.Check(err, false, "Scan targets by manager: %s failed\n", mgrID)
+		OwmError.Check(err, "Scan targets by manager: %s failed\n", mgrID)
 		targets = append(targets, target)
 	}
 	return targets
@@ -137,7 +137,7 @@ func (helper *DbHelper) GetManagerByTgt(tgtID string) string {
 	var manager string
 	err := row.Scan(&manager)
 	if err == sql.ErrNoRows {
-		OwmError.Check(err, false, "Scan manager by target ID: %s failed\n", tgtID)
+		OwmError.Check(err, "Scan manager by target ID: %s failed\n", tgtID)
 	}
 	return manager
 }
@@ -146,12 +146,12 @@ func (helper *DbHelper) GetMgrsByUser(userName string) []string {
 	defer OwmError.Pack()
 	rows, err := helper.Db.Query("select distinct manager from contmap where usrname=?", userName)
 	defer rows.Close()
-	OwmError.Check(err, false, "Query containers by user: %s failed\n", userName)
+	OwmError.Check(err, "Query containers by user: %s failed\n", userName)
 	var managers []string
 	for rows.Next() {
 		var manager string
 		err = rows.Scan(&manager)
-		OwmError.Check(err, false, "Scan targets by manager: %s failed\n", userName)
+		OwmError.Check(err, "Scan targets by manager: %s failed\n", userName)
 		managers = append(managers, manager)
 	}
 	return managers
@@ -160,44 +160,38 @@ func (helper *DbHelper) GetMgrsByUser(userName string) []string {
 func (helper *DbHelper) InputConts(usrName, targetID, managerID string) {
 	defer OwmError.Pack()
 	if targetID == "" || managerID == "" {
-		OwmError.Check(errors.New("Target or Manager ID could not be empty"), false, "Input Containers Failed\n")
+		OwmError.Check(errors.New("Target or Manager ID could not be empty"), "Input Containers Failed\n")
 	}
 	result, err := helper.Db.Exec("insert INTO contmap(target,manager,usrname) values(?,?,?)", targetID, managerID, usrName)
-	OwmError.Check(err, false, "Insert Containers failed\n")
+	OwmError.Check(err, "Insert Containers failed\n")
 	rowsaffected, err := result.RowsAffected()
-	OwmError.Check(err, false, "Get RowsAffected failed\n")
+	OwmError.Check(err, "Get RowsAffected failed\n")
 	if rowsaffected != 1 {
-		OwmError.Check(err, false, "some stange things happened while inserting\n")
+		OwmError.Check(err, "some stange things happened while inserting\n")
 	}
 }
 
 func (helper *DbHelper) DeleteConts(targetID string) {
+	defer OwmError.Pack()
 	if targetID == "" {
-		return
+		OwmError.Check(errors.New("Empty target ID when delete containers.\n"), "")
 	}
 	result, err := helper.Db.Exec("delete from contmap where target=?", targetID)
-	if err != nil {
-		fmt.Printf("Delete data failed,err:%v\n", err)
-		return
-	}
+	OwmError.Check(err, "Delete data failed.\n")
 	rowsaffected, err := result.RowsAffected() //通过RowsAffected获取受影响的行数
-	if err != nil {
-		fmt.Printf("Get RowsAffected failed,err:%v\n", err)
-		return
-	}
+	OwmError.Check(err, "Get RowsAffected failed.\n")
 	if rowsaffected != 1 {
-		fmt.Println("some stange things happened while deleting ")
-		return
+		OwmError.Check(errors.New("some stange things happened while deleting.\n"), "")
 	}
 }
 
 func (helper *DbHelper) queryUser(name string) {
 	defer OwmError.Pack()
 	rows, err := helper.Db.Query("select * from userlist where uname=?", name)
-	OwmError.Check(err, false, "Query user %s error\n", name)
+	OwmError.Check(err, "Query user %s error\n", name)
 	defer rows.Close()
 	if rows.Next() {
-		OwmError.Check(errors.New("UserExistError"), false, "User %s Already Exist\n", name)
+		OwmError.Check(errors.New("UserExistError"), "User %s Already Exist\n", name)
 	}
 }
 
@@ -207,7 +201,7 @@ func (helper *DbHelper) QueryPasswd(name string) string {
 	row := helper.Db.QueryRow("select passwd from userlist where uname=?", name)
 	err := row.Scan(&passwd)
 	if err == sql.ErrNoRows {
-		OwmError.Check(OwmError.GetUserNotExistError(name), false, "Query Password failed")
+		OwmError.Check(OwmError.GetUserNotExistError(name), "Query Password failed")
 	}
 	return passwd
 }
@@ -216,10 +210,10 @@ func (helper *DbHelper) InputUser(user Model.User) {
 	defer OwmError.Pack()
 	helper.queryUser(user.Name)
 	result, err := helper.Db.Exec("insert INTO userlist(uname,passwd) values(?,?)", user.Name, user.Passwd)
-	OwmError.Check(err, false, "Insert user: %s failed\n", user.Name)
+	OwmError.Check(err, "Insert user: %s failed\n", user.Name)
 	rowsaffected, err := result.RowsAffected() //通过RowsAffected获取受影响的行数
-	OwmError.Check(err, false, "Db RowsAffected Error\n")
+	OwmError.Check(err, "Db RowsAffected Error\n")
 	if rowsaffected != 1 {
-		OwmError.Check(err, false, "Some thing wrong When insert user: %s\n", user.Name)
+		OwmError.Check(err, "Some thing wrong When insert user: %s\n", user.Name)
 	}
 }
