@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -41,21 +40,13 @@ func StartServe(app *iris.Application) {
 	defer f.Close()
 	ChooseLogOutput(app, f)
 	requestLogger := logger.New(logger.Config{
-		// Status displays status code
-		Status: true,
-		// IP displays request's remote address
-		IP: true,
-		// Method displays the http method
-		Method: true,
-		// Path displays the request path
-		Path: true,
-		// Query appends the url query to the Path.
-		Query: true,
-		// if !empty then its contents derives from `ctx.Values().Get("logger_message")
-		// will be added to the logs.
+		Status:             true,
+		IP:                 true,
+		Method:             true,
+		Path:               true,
+		Query:              true,
 		MessageContextKeys: []string{"logger_message"},
-		// if !empty then its contents derives from `ctx.GetHeader("User-Agent")
-		MessageHeaderKeys: []string{"User-Agent"},
+		MessageHeaderKeys:  []string{"User-Agent"},
 	})
 	app.UseGlobal(requestLogger)
 
@@ -189,9 +180,7 @@ func WebMainViewHandler(ctx iris.Context) {
 	//groups := [2](map[string]string){{"manager": "manager1", "1": "target1"}, {"manager": "manager2", "1": "target1", "2": "target2"}}
 	groups := GetMainInfoByUser(ctx.Params().Get("name"))
 	ctx.ViewData("index", GetMainIndex(len(groups)))
-	bytesGroups, _ := json.Marshal(groups)
-	jsonGroups := string(bytesGroups)
-	ctx.ViewData("groupList", jsonGroups)
+	ctx.ViewData("groupList", internal.GetJsonData(groups))
 	err := ctx.View("main.html")
 	OwmError.Check(err, false, "View page error: Main")
 }
@@ -199,51 +188,6 @@ func WebMainViewHandler(ctx iris.Context) {
 func WebTableViewHandler(ctx iris.Context) {
 	ctx.Gzip(true)
 	ctx.ContentType("text/html")
-	//forloop := [2]string{"0", "1"}
-	//index := [][]string{{"2", "3"}, {"2", "3", "4"}}
-	//targetList := [2][]map[string]string{
-	//	{
-	//		{
-	//			"ID":     "target111",
-	//			"Name":   "target1",
-	//			"Status": "Normal",
-	//		},
-	//		{
-	//			"ID":     "target222",
-	//			"Name":   "target2",
-	//			"Status": "Normal",
-	//		},
-	//	},
-	//	{
-	//		{
-	//			"ID":     "target333",
-	//			"Name":   "target3",
-	//			"Status": "Normal",
-	//		},
-	//		{
-	//			"ID":     "target444",
-	//			"Name":   "target4",
-	//			"Status": "Normal",
-	//		},
-	//		{
-	//			"ID":     "target555",
-	//			"Name":   "target5",
-	//			"Status": "Normal",
-	//		},
-	//	},
-	//}
-	//managerList := [2](map[string]string){
-	//	{
-	//		"ID":     "AAAAA",
-	//		"Name":   "manager1",
-	//		"Status": "Normal",
-	//	},
-	//	{
-	//		"ID":     "BBBBB",
-	//		"Name":   "manager2",
-	//		"Status": "Normal",
-	//	},
-	//}
 	targetList, managerList := GetTableInfosByUser(ctx.Params().Get("name"))
 	ctx.ViewData("mgrList", internal.GetJsonData(managerList))
 	ctx.ViewData("tgtList", internal.GetJsonData(targetList))
@@ -319,4 +263,18 @@ func TerminalHandler(ctx iris.Context) {
 	defer HandlerRecover(ctx)
 	contID := ctx.Params().Get("contid")
 	AttachTty(ctx, contID)
+}
+
+func WebProfileHandler(ctx iris.Context) {
+	defer HandlerRecover(ctx)
+	ctx.ContentType("text/html")
+	err := ctx.View("profile.html")
+	OwmError.Check(err, false, "View page error: Profile")
+}
+
+func WebInfoHandler(ctx iris.Context) {
+	defer HandlerRecover(ctx)
+	ctx.ContentType("text/html")
+	err := ctx.View("Infos.html")
+	OwmError.Check(err, false, "View page error: Info")
 }

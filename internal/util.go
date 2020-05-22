@@ -126,10 +126,9 @@ func BuildPostRule(tgtIP, mgrIP string) []string {
 }
 
 func GetJsonData(v interface{}) string {
+	defer OwmError.Pack()
 	tmp, err := json.Marshal(v)
-	if err != nil {
-		panic(err)
-	}
+	OwmError.Check(err, false, "Json Marshal failed\n")
 	return string(tmp)
 }
 

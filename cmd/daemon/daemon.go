@@ -39,6 +39,8 @@ func registerRouter(app *iris.Application) {
 		web.Get("/add/{name:string}", server.CheckSession, server.WebAddHandler)
 		web.Post("/add/{name:string}", server.CheckSession, server.AddHandler)
 		web.Post("/remove/{name:string}", server.CheckSession, server.WebRemoveHandler)
+		web.Get("/profile/{name:string}", server.CheckSession, server.WebProfileHandler)
+		web.Get("/info/{name:string}", server.CheckSession, server.WebInfoHandler)
 	}
 }
 
